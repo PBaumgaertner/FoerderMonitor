@@ -247,13 +247,30 @@ def scrape_page(page, prog: dict, today: str, scraped_at: str) -> tuple[list[dic
 
 def save_rates(rows: list[dict]):
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    file_exists = OUTPUT_CSV.exists()
-    with open(OUTPUT_CSV, "a", newline="", encoding="utf-8") as f:
+
+    # Bestehende Zeilen lesen – nur valide (11-Spalten) behalten
+    existing = []
+    if OUTPUT_CSV.exists():
+        with open(OUTPUT_CSV, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            if reader.fieldnames == RATES_HEADER:
+                for row in reader:
+                    # Zeilen von heute überspringen (Deduplizierung)
+                    if row.get("date") == rows[0]["date"] if rows else False:
+                        continue
+                    # Nur Zeilen mit foerderstufe behalten (neue Struktur)
+                    if row.get("foerderstufe"):
+                        existing.append(row)
+            else:
+                print(f"  ⚠  Alte CSV-Struktur erkannt – wird neu aufgebaut")
+
+    # Neu schreiben: bestehende valide Zeilen + neue Zeilen
+    with open(OUTPUT_CSV, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=RATES_HEADER)
-        if not file_exists:
-            writer.writeheader()
+        writer.writeheader()
+        writer.writerows(existing)
         writer.writerows(rows)
-    print(f"  💾 {len(rows)} Zeilen → {OUTPUT_CSV.name}")
+    print(f"  💾 {len(rows)} neue Zeilen + {len(existing)} bestehende → {OUTPUT_CSV.name}")
 
 def save_programme(programme_list: list[dict]):
     DATA_DIR.mkdir(parents=True, exist_ok=True)
