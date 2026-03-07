@@ -176,14 +176,35 @@ function tagClass(s) {
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
   let data = [];
+  window._isDemo = false;
   try {
     const resp = await fetch('../data/kfw_rates.csv');
     if (!resp.ok) throw new Error();
     data = parseCSV(await resp.text());
+    if (!data.length) throw new Error();
   } catch(_) {
     data = demoData();
+    window._isDemo = true;
   }
-  if (!data.length) data = demoData();
+
+  // Demo-Banner einblenden
+  if (window._isDemo) {
+    const banner = document.createElement('div');
+    banner.innerHTML = `
+      <div style="background:rgba(247,129,102,.08);border:1px solid rgba(247,129,102,.3);
+        border-radius:8px;padding:12px 20px;margin-bottom:24px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:18px">⚠️</span>
+        <div>
+          <span style="font-family:var(--mono);font-size:11px;text-transform:uppercase;
+            letter-spacing:1px;color:var(--accent3);font-weight:500">Demo-Modus</span>
+          <p style="font-size:12px;color:var(--muted);margin-top:2px">
+            Keine echten Daten gefunden (<code style="font-family:var(--mono);font-size:11px">data/kfw_rates.csv</code> fehlt oder leer).
+            Starte den Scraper einmal manuell: <strong style="color:var(--text)">Actions → Daily KfW Scraper → Run workflow</strong>
+          </p>
+        </div>
+      </div>`;
+    document.querySelector('main').prepend(banner);
+  }
 
   const dates   = [...new Set(data.map(r => r.date))].sort();
   const latest  = dates[dates.length - 1];
@@ -192,7 +213,8 @@ async function init() {
   const yest    = prev ? data.filter(r => r.date === prev) : [];
 
   document.getElementById('lastUpdate').innerHTML =
-    `<span class="dot"></span>Stand: <strong>${latest}</strong>`;
+    `<span class="dot"></span>Stand: <strong>${latest}</strong>` +
+    (window._isDemo ? ' <span style="background:rgba(247,129,102,.2);color:var(--accent3);font-size:10px;padding:2px 7px;border-radius:4px;margin-left:6px;letter-spacing:.5px">DEMO</span>' : '');
 
   renderKPIs(today, yest);
   renderComparison(today);
@@ -257,15 +279,35 @@ function calcDelta(cur, yest, ref) {
 }
 
 // ── Vergleich ─────────────────────────────────────────────────────────────────
+window._compToday = [];
+
 function renderComparison(today) {
+  window._compToday = today;
+  const arten = [...new Set(today.map(r => r.darlehensart))].filter(Boolean);
+  const filterHtml = arten.map((a,i) => {
+    const label = a.includes('Annuit') ? 'Annuität' : 'Endfällig';
+    return `<button class="filter-btn ${i===0?'active':''}" onclick="filterComp('${a}',this)">${label}</button>`;
+  }).join('');
+  document.getElementById('comparisonBars').innerHTML =
+    `<div class="filter-row" id="compFilters" style="margin-bottom:14px">${filterHtml}</div><div id="compBarsInner"></div>`;
+  buildComparison(today, arten[0] || 'Annuitätendarlehen');
+}
+
+function filterComp(art, btn) {
+  document.querySelectorAll('#compFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildComparison(window._compToday, art);
+}
+
+function buildComparison(today, darlehen) {
   const rows = today.filter(r =>
-    r.darlehensart === 'Annuitätendarlehen' &&
+    r.darlehensart === darlehen &&
     r.laufzeit_label.includes('10') &&
     parseFloat(r.effektivzins_pct) > 0);
-  if (!rows.length) { document.getElementById('comparisonBars').innerHTML='<div class="empty">Keine Daten</div>'; return; }
+  if (!rows.length) { document.getElementById('compBarsInner').innerHTML='<div class="empty">Keine Daten für diese Darlehensart</div>'; return; }
 
   const max = Math.max(...rows.map(r => parseFloat(r.effektivzins_pct)));
-  document.getElementById('comparisonBars').innerHTML = rows.map(r => {
+  document.getElementById('compBarsInner').innerHTML = rows.map(r => {
     const v = parseFloat(r.effektivzins_pct);
     const col = STUFE_COL[r.foerderstufe] || '#8b949e';
     return `<div class="bar-row">
@@ -441,24 +483,46 @@ function buildChart(stufe) {
 // ── Demo-Daten ────────────────────────────────────────────────────────────────
 function demoData() {
   const rows = [];
+  // Realistisch: EH55 ~1.03/1.04%, KFW40 ~1.00/1.01%, KFW40+QNG ~0.97/0.98%
   const cfgs = [
-    {pid:'297',stufe:'EH55',base:1.05},{pid:'297',stufe:'KFW40',base:0.65},{pid:'297',stufe:'KFW40+QNG',base:0.60},
-    {pid:'298',stufe:'EH55',base:1.10},{pid:'298',stufe:'KFW40',base:0.70},{pid:'298',stufe:'KFW40+QNG',base:0.65},
-    {pid:'300',stufe:'KFW40',base:1.12},{pid:'296',stufe:'KFW40',base:0.80},
+    {pid:'297',stufe:'EH55',      base:1.03},{pid:'297',stufe:'KFW40',     base:1.00},{pid:'297',stufe:'KFW40+QNG',base:0.97},
+    {pid:'298',stufe:'EH55',      base:1.03},{pid:'298',stufe:'KFW40',     base:1.00},{pid:'298',stufe:'KFW40+QNG',base:0.97},
+    {pid:'300',stufe:'KFW40',     base:1.05},
+    {pid:'296',stufe:'KFW40',     base:1.02},
   ];
-  const lz = [
-    {label:'4 bis 10 Jahre'},{label:'11 bis 25 Jahre'},{label:'26 bis 35 Jahre'}
+  const lzAnn = [
+    {label:'4 bis 10 Jahre',  zb:'10'},
+    {label:'11 bis 25 Jahre', zb:'10'},
+    {label:'26 bis 35 Jahre', zb:'10'},
+  ];
+  const lzEnd = [
+    {label:'4 bis 10 Jahre',  zb:'10'},
+    {label:'11 bis 25 Jahre', zb:'10'},
   ];
   for (let d=29;d>=0;d--) {
     const dt = new Date(); dt.setDate(dt.getDate()-d);
     const date = dt.toISOString().split('T')[0];
-    const trend = d>20?.3:d>10?.15:0;
-    for (const c of cfgs) for (const l of lz) {
-      const soll = +(c.base+trend+(Math.random()-.5)*.05).toFixed(2);
-      rows.push({ date, programme_id:c.pid, foerderstufe:c.stufe,
-        darlehensart:'Annuitätendarlehen', laufzeit_label:l.label,
-        zinsbindung_jahre:'10', sollzins_pct:String(soll),
-        effektivzins_pct:String(+(soll+.01).toFixed(2)) });
+    const trend = d>20?.08:d>10?.04:0;
+    for (const c of cfgs) {
+      // Annuitätendarlehen
+      for (const l of lzAnn) {
+        const lzBonus = lzAnn.indexOf(l) * 0.03; // längere Laufzeit = etwas höher
+        const soll = +(c.base + trend + lzBonus + (Math.random()-.5)*.02).toFixed(2);
+        rows.push({ date, programme_id:c.pid, foerderstufe:c.stufe,
+          darlehensart:'Annuitätendarlehen', laufzeit_label:l.label,
+          zinsbindung_jahre:l.zb, sollzins_pct:String(soll),
+          effektivzins_pct:String(+(soll+.01).toFixed(2)) });
+      }
+      // Endfälliges Darlehen (nur für 297/298/296)
+      if (['297','298','296'].includes(c.pid)) {
+        for (const l of lzEnd) {
+          const soll = +(c.base + trend + 0.05 + (Math.random()-.5)*.02).toFixed(2);
+          rows.push({ date, programme_id:c.pid, foerderstufe:c.stufe,
+            darlehensart:'Endfälliges Darlehen', laufzeit_label:l.label,
+            zinsbindung_jahre:l.zb, sollzins_pct:String(soll),
+            effektivzins_pct:String(+(soll+.01).toFixed(2)) });
+        }
+      }
     }
   }
   return rows;
