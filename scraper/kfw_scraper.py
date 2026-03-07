@@ -3,15 +3,13 @@ KfW Neubau Zinskonditionen Scraper
 ===================================
 Scrapet täglich die aktuellen Zinssätze der wichtigsten KfW Neubau-Programme:
   - 300  Wohneigentum für Familien
-  - 297  Klimafreundlicher Neubau – Wohngebäude (privat)
-  - 298  Klimafreundlicher Neubau – Wohngebäude (gewerblich)
+  - 297/298  Klimafreundlicher Neubau – Wohngebäude
   - 296  Klimafreundlicher Neubau im Niedrigpreissegment
 
-Ergebnis wird in kfw_rates.csv gespeichert (append-Modus für Zeitreihe).
+Ergebnis wird in data/kfw_rates.csv gespeichert (append-Modus für Zeitreihe).
 """
 
 import csv
-import json
 import os
 import re
 import sys
@@ -29,14 +27,9 @@ PROGRAMMES = [
         "url": "https://www.kfw.de/inlandsfoerderung/Privatpersonen/Neubau/F%C3%B6rderprodukte/Wohneigentum-f%C3%BCr-Familien-(300)/",
     },
     {
-        "id": "297",
-        "name": "Klimafreundlicher Neubau Wohngebäude – Privatpersonen",
-        "url": "https://www.kfw.de/inlandsfoerderung/Privatpersonen/Neubau/F%C3%B6rderprodukte/Klimafreundlicher-Neubau-Wohngeb%C3%A4ude-(297)/",
-    },
-    {
-        "id": "298",
-        "name": "Klimafreundlicher Neubau Wohngebäude – Unternehmen",
-        "url": "https://www.kfw.de/inlandsfoerderung/Unternehmen/Bauen-Wohnen/F%C3%B6rderprodukte/Klimafreundlicher-Neubau-Wohngeb%C3%A4ude-(298)/",
+        "id": "297/298",
+        "name": "Klimafreundlicher Neubau Wohngebäude",
+        "url": "https://www.kfw.de/inlandsfoerderung/Privatpersonen/Neubau/F%C3%B6rderprodukte/Klimafreundlicher-Neubau-Wohngeb%C3%A4ude-(297-298)/",
     },
     {
         "id": "296",
@@ -60,12 +53,10 @@ CSV_HEADER = [
 
 # ── Hilfsfunktionen ────────────────────────────────────────────────────────────
 
-def clean_rate(raw: str) -> str | None:
-    """'1,23 %' oder '1.23%' → '1.23', '-,--' → None"""
+def clean_rate(raw: str):
     raw = raw.strip()
     if not raw or re.match(r"^[-,\s]+%?$", raw):
         return None
-    # Deutsches Format: Komma als Dezimalzeichen
     raw = raw.replace("%", "").replace("\xa0", "").strip()
     raw = raw.replace(",", ".")
     try:
@@ -74,11 +65,10 @@ def clean_rate(raw: str) -> str | None:
         return None
 
 
-def parse_rate_table(page, url: str) -> list[dict]:
-    """Liest die Konditionen-Tabelle von einer KfW-Produktseite."""
+def parse_rate_table(page) -> list[dict]:
     records = []
-    
-    # Warte bis JavaScript die Zinsen geladen hat (erkennt echte Zahlen statt -,--)
+
+    # Warte bis JavaScript die Zinsen geladen hat
     try:
         page.wait_for_function(
             """() => {
@@ -88,12 +78,11 @@ def parse_rate_table(page, url: str) -> list[dict]:
                 }
                 return false;
             }""",
-            timeout=15_000,
+            timeout=20_000,
         )
     except PlaywrightTimeout:
-        print(f"  ⚠  Zinsen wurden nicht dynamisch geladen – versuche trotzdem zu lesen")
+        print(f"  ⚠  Zinsen nicht dynamisch geladen – versuche trotzdem")
 
-    # Alle Tabellen auf der Seite durchsuchen
     tables = page.query_selector_all("table")
     for table in tables:
         rows = table.query_selector_all("tr")
@@ -104,19 +93,15 @@ def parse_rate_table(page, url: str) -> list[dict]:
             if not any(texts):
                 continue
 
-            # Headerzeile erkennen
             if row.query_selector_all("th"):
                 headers = texts
                 continue
 
-            # Datenzeile – muss mindestens eine Prozentzahl enthalten
             if not any("%" in t or re.search(r"\d,\d", t) for t in texts):
                 continue
 
-            # Laufzeit aus erster Spalte
             laufzeit = texts[0] if texts else "unbekannt"
 
-            # Zinssätze extrahieren (suche nach Mustern wie "1,23 % (1,25 %)")
             rates_found = re.findall(
                 r"([\d]+[,.][\d]+)\s*%\s*(?:\(?\s*([\d]+[,.][\d]+)\s*%\s*\)?)?",
                 " ".join(texts),
@@ -124,7 +109,6 @@ def parse_rate_table(page, url: str) -> list[dict]:
 
             if rates_found:
                 sollzins_raw, effzins_raw = rates_found[0]
-                # Zinsbindung aus Tabelle extrahieren (sofern vorhanden)
                 zinsbindung = None
                 for h, v in zip(headers, texts):
                     if "zins" in h.lower() and "bindung" in h.lower():
@@ -162,8 +146,8 @@ def scrape_all() -> list[dict]:
         for prog in PROGRAMMES:
             print(f"📡 Scraping KfW {prog['id']} …")
             try:
-                page.goto(prog["url"], wait_until="networkidle", timeout=30_000)
-                records = parse_rate_table(page, prog["url"])
+                page.goto(prog["url"], wait_until="domcontentloaded", timeout=45_000)
+                records = parse_rate_table(page)
 
                 if records:
                     for rec in records:
@@ -181,7 +165,7 @@ def scrape_all() -> list[dict]:
                     text = page.inner_text("body")
                     rates = re.findall(r"([\d]+,[\d]+)\s*%\s*(?:effektiv|p\.a\.)?", text)
                     if rates:
-                        print(f"  ℹ️  Fallback-Text-Extraktion: {rates[:4]}")
+                        print(f"  ℹ️  Fallback: {rates[:4]}")
                         all_rows.append({
                             "date": today,
                             "programme_id": prog["id"],
@@ -205,6 +189,8 @@ def scrape_all() -> list[dict]:
 
 
 def save_to_csv(rows: list[dict]):
+    # Ordner anlegen falls nicht vorhanden
+    OUTPUT_CSV.parent.mkdir(parents=True, exist_ok=True)
     file_exists = OUTPUT_CSV.exists()
     with open(OUTPUT_CSV, "a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=CSV_HEADER)
