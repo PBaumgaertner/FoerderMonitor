@@ -2,13 +2,12 @@ name: KfW Zinsen – Täglicher Scraper
 
 on:
   schedule:
-    # Jeden Werktag um 08:15 Uhr MEZ (= 07:15 UTC)
     - cron: '15 7 * * 1-5'
-  workflow_dispatch:  # Auch manuell auslösbar über GitHub UI
+  workflow_dispatch:
 
 jobs:
   scrape:
-    runs-on: ubuntu-22.04   # Ubuntu 22 vermeidet libasound2-Problem auf Ubuntu 24
+    runs-on: ubuntu-22.04
     permissions:
       contents: write
 
@@ -30,10 +29,10 @@ jobs:
       - name: 🏗 KfW Zinsen scrapen
         run: python scraper/kfw_scraper.py
 
-      - name: 💾 Neue Daten committen (falls vorhanden)
+      - name: 💾 Neue Daten committen
         run: |
           git config --global user.name  "KfW-Scraper-Bot"
           git config --global user.email "bot@github-actions"
-          git add data/kfw_rates.csv
-          git diff --staged --quiet || git commit -m "📊 KfW Zinsen Update $(date '+%Y-%m-%d')"
+          git add data/kfw_rates.csv data/kfw_programme.json
+          git diff --staged --quiet || git commit -m "📊 KfW Update $(date '+%Y-%m-%d')"
           git push
