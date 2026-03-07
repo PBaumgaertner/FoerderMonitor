@@ -25,6 +25,9 @@ jobs:
       - name: 📦 Abhängigkeiten installieren
         run: |
           pip install -r requirements.txt
+          # Fix für Ubuntu 24: libasound2 durch libasound2t64 ersetzen
+          sudo apt-get update
+          sudo apt-get install -y libasound2t64
           playwright install chromium --with-deps
 
       - name: 🏗 KfW Zinsen scrapen
