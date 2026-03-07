@@ -203,9 +203,13 @@ def scrape_page(page, prog: dict, today: str, scraped_at: str) -> tuple[list[dic
             elif any(x in tl for x in ["klimafreundliches wohngebäude", "klimafreundlicher neubau",
                                         "kfw 40", "kfw40", "effizienzhaus 40"]):
                 current_foerderstufe = "KFW40"
-            # Programm 296: hat nur eine eigene Stufe KNN (Klimafreundliches Wohngebäude im Niedrigpreissegment)
+            # Programm 296: hat nur eine eigene Stufe KNN
             elif prog["id"] == "296":
                 current_foerderstufe = "KNN"
+            # Programm 300: hat zwei Stufen KFW40 und KFW40+QNG
+            # Wenn eine Überschrift kommt aber kein Keyword greift → KFW40
+            elif prog["id"] == "300" and current_foerderstufe == "Unbekannt":
+                current_foerderstufe = "KFW40"
 
             if "297" in text and "298" not in text:
                 current_prog_id   = "297"
@@ -263,7 +267,7 @@ def save_rates(rows: list[dict]):
             if reader.fieldnames == RATES_HEADER:
                 for row in reader:
                     # Zeilen von heute überspringen (Deduplizierung)
-                    if row.get("date") == rows[0]["date"] if rows else False:
+                    if row.get("date") == (rows[0]["date"] if rows else None):
                         continue
                     # Nur Zeilen mit foerderstufe behalten (neue Struktur)
                     if row.get("foerderstufe"):
