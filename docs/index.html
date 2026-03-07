@@ -160,13 +160,26 @@ function parseCSV(text) {
   if (lines.length < 2) return [];
   const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
   console.log('CSV headers:', headers);
-  console.log('CSV rows:', lines.length - 1);
-  return lines.slice(1).map(line => {
+
+  // Nur Zeilen mit der vollen Spaltenanzahl akzeptieren (ignoriert alte Scraper-Runs)
+  const expectedCols = headers.length;
+
+  const rows = lines.slice(1).map(line => {
     const vals = line.split(',');
     const obj = {};
     headers.forEach((h, i) => obj[h] = (vals[i] || '').trim().replace(/^"|"$/g, ''));
     return obj;
-  }).filter(r => r.date && r.date.length > 0);
+  }).filter(r => {
+    if (!r.date || r.date.length === 0) return false;
+    // Zeile muss das richtige Datumsformat haben
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) return false;
+    // Muss foerderstufe haben (neue Scraper-Version)
+    if (!r.foerderstufe || r.foerderstufe.length === 0) return false;
+    return true;
+  });
+
+  console.log('Gültige Zeilen (neue Struktur):', rows.length);
+  return rows;
 }
 
 // ── Colours ───────────────────────────────────────────────────────────────────
@@ -219,8 +232,8 @@ async function init() {
           <span style="font-family:var(--mono);font-size:11px;text-transform:uppercase;
             letter-spacing:1px;color:var(--accent3);font-weight:500">Demo-Modus</span>
           <p style="font-size:12px;color:var(--muted);margin-top:2px">
-            Keine echten Daten gefunden (<code style="font-family:var(--mono);font-size:11px">data/kfw_rates.csv</code> fehlt oder leer).
-            Starte den Scraper einmal manuell: <strong style="color:var(--text)">Actions → Daily KfW Scraper → Run workflow</strong>
+            Keine gültigen Daten gefunden. Die CSV enthält möglicherweise nur alte Zeilen (ohne <code style="font-family:var(--mono);font-size:11px">foerderstufe</code>-Spalte).
+            Starte den Scraper einmal manuell um neue Daten zu erzeugen: <strong style="color:var(--text)">Actions → Daily KfW Scraper → Run workflow</strong>
           </p>
         </div>
       </div>`;
