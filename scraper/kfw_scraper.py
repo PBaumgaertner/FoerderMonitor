@@ -23,17 +23,17 @@ from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeo
 PROGRAMMES = [
     {
         "id": "297/298",
-        "name": "Klimafreundlicher Neubau Wohngebäude",
+        "name": "Klimafreundlicher Neubau – Wohngebäude (297, 298)",
         "url": "https://www.kfw.de/inlandsfoerderung/Privatpersonen/Neubau/F%C3%B6rderprodukte/Klimafreundlicher-Neubau-Wohngeb%C3%A4ude-(297-298)/",
     },
     {
         "id": "300",
-        "name": "Wohneigentum für Familien – Neubau",
+        "name": "Wohneigentum für Familien – Neubau (300)",
         "url": "https://www.kfw.de/inlandsfoerderung/Privatpersonen/Neubau/F%C3%B6rderprodukte/Wohneigentum-f%C3%BCr-Familien-(300)/",
     },
     {
         "id": "296",
-        "name": "Klimafreundlicher Neubau im Niedrigpreissegment",
+        "name": "Klimafreundlicher Neubau im Niedrigpreissegment (296)",
         "url": "https://www.kfw.de/inlandsfoerderung/Privatpersonen/Neubau/F%C3%B6rderprodukte/Klimafreundlicher-Neubau-im-Niedrigpreissegment-(296)/",
     },
 ]
@@ -178,7 +178,9 @@ def scrape_page(page, prog: dict, today: str, scraped_at: str) -> tuple[list[dic
     elements = page.query_selector_all("h2, h3, h4, h5, table")
 
     current_darlehensart = "Annuitätendarlehen"
-    current_foerderstufe = "Unbekannt"
+    # 296 hat nur eine Stufe (KNN) – direkt vorbelegen damit auch Zeilen
+    # vor der ersten Überschrift korrekt zugeordnet werden
+    current_foerderstufe = "KNN" if prog["id"] == "296" else "Unbekannt"
     current_prog_id      = prog["id"]
     current_prog_name    = prog["name"]
 
@@ -193,19 +195,24 @@ def scrape_page(page, prog: dict, today: str, scraped_at: str) -> tuple[list[dic
             elif "endfällig" in tl:
                 current_darlehensart = "Endfälliges Darlehen"
 
-            if "effizienzhaus 55" in tl:
+            # Förderstufe erkennen – Reihenfolge wichtig: spezifischste zuerst
+            if any(x in tl for x in ["effizienzhaus 55", "eh 55", "eh55"]):
                 current_foerderstufe = "EH55"
-            elif "qng" in tl:
+            elif any(x in tl for x in ["qng", "qualitätssiegel", "nachhaltiges gebäude"]):
                 current_foerderstufe = "KFW40+QNG"
-            elif "klimafreundlich" in tl:
+            elif any(x in tl for x in ["klimafreundliches wohngebäude", "klimafreundlicher neubau",
+                                        "kfw 40", "kfw40", "effizienzhaus 40"]):
                 current_foerderstufe = "KFW40"
+            # Programm 296: hat nur eine eigene Stufe KNN (Klimafreundliches Wohngebäude im Niedrigpreissegment)
+            elif prog["id"] == "296":
+                current_foerderstufe = "KNN"
 
             if "297" in text and "298" not in text:
                 current_prog_id   = "297"
-                current_prog_name = "Klimafreundlicher Neubau – private Selbstnutzung (297)"
+                current_prog_name = "Klimafreundlicher Neubau – Wohngebäude (297)"
             elif "298" in text and "297" not in text:
                 current_prog_id   = "298"
-                current_prog_name = "Klimafreundlicher Neubau – Vermietung (298)"
+                current_prog_name = "Klimafreundlicher Neubau – Wohngebäude (298)"
             elif prog["id"] not in ("297/298",):
                 current_prog_id   = prog["id"]
                 current_prog_name = prog["name"]
