@@ -8,9 +8,9 @@ on:
 
 jobs:
   scrape:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04   # Ubuntu 22 vermeidet libasound2-Problem auf Ubuntu 24
     permissions:
-      contents: write   # Damit der Job die CSV committen darf
+      contents: write
 
     steps:
       - name: 📥 Repository auschecken
@@ -25,9 +25,6 @@ jobs:
       - name: 📦 Abhängigkeiten installieren
         run: |
           pip install -r requirements.txt
-          # Fix für Ubuntu 24: libasound2 durch libasound2t64 ersetzen
-          sudo apt-get update
-          sudo apt-get install -y libasound2t64
           playwright install chromium --with-deps
 
       - name: 🏗 KfW Zinsen scrapen
@@ -38,6 +35,5 @@ jobs:
           git config --global user.name  "KfW-Scraper-Bot"
           git config --global user.email "bot@github-actions"
           git add data/kfw_rates.csv
-          # Nur committen wenn sich etwas geändert hat
           git diff --staged --quiet || git commit -m "📊 KfW Zinsen Update $(date '+%Y-%m-%d')"
           git push
