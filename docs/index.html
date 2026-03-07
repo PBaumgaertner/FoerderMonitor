@@ -177,12 +177,22 @@ function tagClass(s) {
 async function init() {
   let data = [];
   window._isDemo = false;
-  try {
-    const resp = await fetch('../data/kfw_rates.csv');
-    if (!resp.ok) throw new Error();
-    data = parseCSV(await resp.text());
-    if (!data.length) throw new Error();
-  } catch(_) {
+  // Pfad-Kandidaten: relativ, absolut, GitHub Pages Repo-Name
+  const csvPaths = [
+    '../data/kfw_rates.csv',
+    'data/kfw_rates.csv',
+    '/FoerderMonitor/data/kfw_rates.csv',
+  ];
+  for (const p of csvPaths) {
+    try {
+      const resp = await fetch(p);
+      if (!resp.ok) continue;
+      const text = await resp.text();
+      const parsed = parseCSV(text);
+      if (parsed.length) { data = parsed; break; }
+    } catch(_) {}
+  }
+  if (!data.length) {
     data = demoData();
     window._isDemo = true;
   }
