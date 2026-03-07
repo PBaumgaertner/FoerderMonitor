@@ -153,14 +153,20 @@
 <script>
 // ── CSV Parser ────────────────────────────────────────────────────────────────
 function parseCSV(text) {
-  const lines = text.trim().split('\n');
-  const headers = lines[0].split(',').map(h => h.trim());
+  // Robuster Parser: Windows \r\n, BOM, Leerzeilen
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+                    .replace(/^\uFEFF/, '').trim().split('\n')
+                    .filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+  console.log('CSV headers:', headers);
+  console.log('CSV rows:', lines.length - 1);
   return lines.slice(1).map(line => {
     const vals = line.split(',');
     const obj = {};
-    headers.forEach((h, i) => obj[h] = (vals[i] || '').trim());
+    headers.forEach((h, i) => obj[h] = (vals[i] || '').trim().replace(/^"|"$/g, ''));
     return obj;
-  }).filter(r => r.date);
+  }).filter(r => r.date && r.date.length > 0);
 }
 
 // ── Colours ───────────────────────────────────────────────────────────────────
@@ -178,23 +184,28 @@ async function init() {
   let data = [];
   window._isDemo = false;
   // Pfad-Kandidaten: relativ, absolut, GitHub Pages Repo-Name
+  const repoName = location.pathname.split('/')[1] || 'FoerderMonitor';
   const csvPaths = [
     '../data/kfw_rates.csv',
     'data/kfw_rates.csv',
-    '/FoerderMonitor/data/kfw_rates.csv',
+    `/${repoName}/data/kfw_rates.csv`,
   ];
   for (const p of csvPaths) {
     try {
+      console.log('Versuche CSV-Pfad:', p);
       const resp = await fetch(p);
-      if (!resp.ok) continue;
+      if (!resp.ok) { console.warn(p, 'HTTP', resp.status); continue; }
       const text = await resp.text();
+      console.log('CSV geladen von:', p, '– Zeichen:', text.length);
       const parsed = parseCSV(text);
+      console.log('Geparste Zeilen:', parsed.length);
       if (parsed.length) { data = parsed; break; }
-    } catch(_) {}
+    } catch(e) { console.warn(p, e.message); }
   }
   if (!data.length) {
     data = demoData();
     window._isDemo = true;
+    console.warn('Alle CSV-Pfade fehlgeschlagen oder leer – Demo-Modus aktiv');
   }
 
   // Demo-Banner einblenden
