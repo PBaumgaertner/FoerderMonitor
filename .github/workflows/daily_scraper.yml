@@ -1,38 +1,42 @@
-name: KfW Zinsen – Täglicher Scraper
+name: Daily KfW Scraper
 
 on:
   schedule:
     - cron: '15 7 * * 1-5'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   scrape:
     runs-on: ubuntu-22.04
-    permissions:
-      contents: write
 
     steps:
-      - name: 📥 Repository auschecken
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 🐍 Python einrichten
+      - name: Python Setup
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-          cache: 'pip'
+          python-version: '3.11'
 
-      - name: 📦 Abhängigkeiten installieren
+      - name: Install Dependencies
         run: |
           pip install -r requirements.txt
-          playwright install chromium --with-deps
+          playwright install chromium
+          playwright install-deps chromium
 
-      - name: 🏗 KfW Zinsen scrapen
+      - name: Run Scraper
         run: python scraper/kfw_scraper.py
 
-      - name: 💾 Neue Daten committen
+      - name: Inject data into dashboard
+        run: python scraper/inject_dashboard.py
+
+      - name: Commit
         run: |
-          git config --global user.name  "KfW-Scraper-Bot"
-          git config --global user.email "bot@github-actions"
-          git add data/kfw_rates.csv data/kfw_programme.json
-          git diff --staged --quiet || git commit -m "📊 KfW Update $(date '+%Y-%m-%d')"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/kfw_rates.csv data/kfw_programme.json docs/index.html
+          git diff --cached --quiet || git commit -m "data: $(date +'%Y-%m-%d') KfW Zinsupdate"
           git push
