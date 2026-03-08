@@ -45,4 +45,5 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/kfw_rates.csv data/kfw_programme.json docs/index.html
           git diff --cached --quiet || git commit -m "data: $(date +'%Y-%m-%d') KfW Zinsupdate"
+          git pull --rebase origin main
           git push
