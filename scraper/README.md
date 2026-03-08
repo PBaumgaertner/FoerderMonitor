@@ -60,6 +60,7 @@ kfw-foerder-monitor/
 ## Datenquelle
 
 Alle Daten stammen direkt von [kfw.de](https://www.kfw.de) und werden täglich automatisch aktualisiert.  
+
 Die KfW-Zinskonditionen orientieren sich am Kapitalmarkt und werden laufend angepasst.
 
 ---
