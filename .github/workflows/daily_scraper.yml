@@ -2,7 +2,13 @@ name: Daily KfW Scraper
 
 on:
   schedule:
+    # 07:15 UTC = 08:15 MEZ / 09:15 MESZ – Werktags
+    # Zweiter Slot als Fallback falls GitHub den ersten überspringt
     - cron: '15 7 * * 1-5'
+    - cron: '45 8 * * 1-5'
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
