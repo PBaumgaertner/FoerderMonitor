@@ -20,6 +20,36 @@ KEEP_FIELDS = [
     "sollzins_pct", "effektivzins_pct",
 ]
 
+# Felder die als Zahl gespeichert werden sollen
+NUMERIC_FIELDS = {"sollzins_pct", "effektivzins_pct"}
+# Felder die immer als String bleiben (nie als 297.0)
+STRING_ID_FIELDS = {"programme_id", "date", "programme_name",
+                    "foerderstufe", "darlehensart", "laufzeit_label"}
+
+
+def normalize_row(row):
+    """Typen normalisieren: IDs als String, Zinswerte als float, leer → None."""
+    result = {}
+    for k in KEEP_FIELDS:
+        v = row.get(k, "")
+        if k in STRING_ID_FIELDS:
+            result[k] = v.strip()
+        elif k in NUMERIC_FIELDS:
+            try:
+                result[k] = float(v) if v.strip() not in ("", "-,--", "–") else None
+            except ValueError:
+                result[k] = None
+        elif k == "zinsbindung_jahre":
+            # Zinsbindung: Zahl oder leer-String
+            try:
+                result[k] = int(float(v)) if v.strip() not in ("", "-,--", "–") else ""
+            except ValueError:
+                result[k] = ""
+        else:
+            result[k] = v.strip()
+    return result
+
+
 def main():
     if not CSV_PATH.exists():
         print("❌ CSV nicht gefunden – abbruch")
@@ -29,7 +59,7 @@ def main():
     with open(CSV_PATH, encoding="utf-8") as f:
         reader = csv.DictReader(f)
         rows = [
-            {k: row[k] for k in KEEP_FIELDS if k in row}
+            normalize_row(row)
             for row in reader
             if row.get("foerderstufe")  # nur neue Struktur
         ]
@@ -39,11 +69,20 @@ def main():
         return
 
     print(f"✅ {len(rows)} Zeilen aus CSV geladen")
+    # Stichprobe zur Überprüfung
+    sample = rows[0]
+    print(f"   Beispiel: programme_id={sample['programme_id']!r} "
+          f"effektivzins={sample['effektivzins_pct']!r} "
+          f"zinsbindung={sample['zinsbindung_jahre']!r}")
 
     # JSON kompakt serialisieren
     json_str = json.dumps(rows, ensure_ascii=False, separators=(',', ':'))
 
     # In HTML ersetzen
+    if not HTML_PATH.exists():
+        print("❌ index.html nicht gefunden – abbruch")
+        return
+
     html = HTML_PATH.read_text(encoding="utf-8")
 
     new_block = (
@@ -65,6 +104,7 @@ def main():
 
     HTML_PATH.write_text(html_new, encoding="utf-8")
     print(f"✅ docs/index.html aktualisiert (Stand: {rows[-1]['date']})")
+
 
 if __name__ == "__main__":
     main()
