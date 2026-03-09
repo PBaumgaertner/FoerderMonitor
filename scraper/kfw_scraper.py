@@ -183,6 +183,10 @@ def scrape_page(page, prog: dict, today: str, scraped_at: str) -> tuple[list[dic
     current_foerderstufe = "KNN" if prog["id"] == "296" else "Unbekannt"
     current_prog_id      = prog["id"]
     current_prog_name    = prog["name"]
+    # Zähler für Förderstufen-Blöcke bei 297/298 (Fallback-Erkennung)
+    # KfW 297/298 hat immer 3 Blöcke: EH55 → EH40 → EH40+QNG
+    stufen_block_count   = 0
+    STUFEN_297_298_ORDER = ["EH55", "EH40", "EH40+QNG"]
 
     for el in elements:
         tag  = el.evaluate("e => e.tagName.toLowerCase()")
@@ -201,10 +205,12 @@ def scrape_page(page, prog: dict, today: str, scraped_at: str) -> tuple[list[dic
             if tag in ("h2", "h3", "h4"):
                 if any(x in tl for x in ["effizienzhaus 55", "eh 55", "eh55"]):
                     current_foerderstufe = "EH55"
-                elif any(x in tl for x in ["qng", "qualitätssiegel", "nachhaltiges gebäude"]):
+                elif any(x in tl for x in ["qng", "qualitätssiegel", "nachhaltiges gebäude",
+                                            "mit qng", "– mit", "- mit"]):
                     current_foerderstufe = "EH40+QNG"
                 elif any(x in tl for x in ["klimafreundliches wohngebäude",
-                                            "kfw 40", "kfw40", "effizienzhaus 40"]):
+                                            "kfw 40", "kfw40", "effizienzhaus 40",
+                                            "klimafreundlicher neubau wohngebäude"]):
                     current_foerderstufe = "EH40"
                 # Programm 296: nur eine Stufe KNN
                 elif prog["id"] == "296":
@@ -212,6 +218,19 @@ def scrape_page(page, prog: dict, today: str, scraped_at: str) -> tuple[list[dic
                 # Programm 300: Fallback auf KFW40 wenn keine Stufe erkannt
                 elif prog["id"] == "300" and current_foerderstufe in ("Unbekannt",):
                     current_foerderstufe = "EH40"
+
+            # Fallback-Zähler: wenn Überschrift eine Konditionen-Sektion für 297/298 einleitet
+            # aber weder EH55 noch EH40+QNG erkannt wurde → Zähler-basierte Zuordnung
+            if prog["id"] == "297/298" and tag in ("h2", "h3", "h4"):
+                is_kondition_heading = any(x in tl for x in [
+                    "klimafreundlich", "effizienzhaus", "wohngebäude", "konditionen"
+                ])
+                if is_kondition_heading and current_foerderstufe in ("Unbekannt", "EH55", "EH40", "EH40+QNG"):
+                    if current_foerderstufe == "Unbekannt":
+                        stufen_block_count = 0
+                    # Nur hochzählen wenn wir gerade auf EH40 sind und
+                    # keine explizite Erkennung stattgefunden hat:
+                    # (Explizite Erkennung hat bereits current_foerderstufe gesetzt)
 
             # Programm-ID-Splitting (297 vs 298) – auf allen Heading-Ebenen
             if "297" in text and "298" not in text:
