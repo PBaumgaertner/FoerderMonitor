@@ -107,9 +107,9 @@ def scrape_page(page, prog: dict, today: str, scraped_at: str) -> tuple[list[dic
     # Förderstufen-Definitionen (h3 + folgende ul)
     foerderstufen_mapping = {
         "effizienzhaus 55":  "EH55",
-        "klimafreundliches wohngebäude":  "KFW40",
-        "mit qualitätssiegel": "KFW40+QNG",
-        "mit qng": "KFW40+QNG",
+        "klimafreundliches wohngebäude":  "EH40",
+        "mit qualitätssiegel": "EH40+QNG",
+        "mit qng": "EH40+QNG",
     }
 
     # Alle Abschnitte der Seite lesen
@@ -195,22 +195,25 @@ def scrape_page(page, prog: dict, today: str, scraped_at: str) -> tuple[list[dic
             elif "endfällig" in tl:
                 current_darlehensart = "Endfälliges Darlehen"
 
-            # Förderstufe erkennen – Reihenfolge wichtig: spezifischste zuerst
-            if any(x in tl for x in ["effizienzhaus 55", "eh 55", "eh55"]):
-                current_foerderstufe = "EH55"
-            elif any(x in tl for x in ["qng", "qualitätssiegel", "nachhaltiges gebäude"]):
-                current_foerderstufe = "KFW40+QNG"
-            elif any(x in tl for x in ["klimafreundliches wohngebäude", "klimafreundlicher neubau",
-                                        "kfw 40", "kfw40", "effizienzhaus 40"]):
-                current_foerderstufe = "KFW40"
-            # Programm 296: hat nur eine eigene Stufe KNN
-            elif prog["id"] == "296":
-                current_foerderstufe = "KNN"
-            # Programm 300: hat zwei Stufen KFW40 und KFW40+QNG
-            # Wenn eine Überschrift kommt aber kein Keyword greift → KFW40
-            elif prog["id"] == "300" and current_foerderstufe == "Unbekannt":
-                current_foerderstufe = "KFW40"
+            # Förderstufe NUR auf h3/h4-Ebene setzen.
+            # h5 enthält Programmnamen wie "Klimafreundlicher Neubau Wohngebäude (297/298)"
+            # die fälschlicherweise die übergeordnete Förderstufe überschreiben würden.
+            if tag in ("h2", "h3", "h4"):
+                if any(x in tl for x in ["effizienzhaus 55", "eh 55", "eh55"]):
+                    current_foerderstufe = "EH55"
+                elif any(x in tl for x in ["qng", "qualitätssiegel", "nachhaltiges gebäude"]):
+                    current_foerderstufe = "EH40+QNG"
+                elif any(x in tl for x in ["klimafreundliches wohngebäude",
+                                            "kfw 40", "kfw40", "effizienzhaus 40"]):
+                    current_foerderstufe = "EH40"
+                # Programm 296: nur eine Stufe KNN
+                elif prog["id"] == "296":
+                    current_foerderstufe = "KNN"
+                # Programm 300: Fallback auf KFW40 wenn keine Stufe erkannt
+                elif prog["id"] == "300" and current_foerderstufe in ("Unbekannt",):
+                    current_foerderstufe = "EH40"
 
+            # Programm-ID-Splitting (297 vs 298) – auf allen Heading-Ebenen
             if "297" in text and "298" not in text:
                 current_prog_id   = "297"
                 current_prog_name = "Klimafreundlicher Neubau – Wohngebäude (297)"
