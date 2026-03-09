@@ -3,13 +3,13 @@ name: Daily KfW Scraper
 on:
   schedule:
     # 07:15 UTC = 08:15 MEZ / 09:15 MESZ – Werktags
-    # Zweiter Slot als Fallback falls GitHub den ersten überspringt
     - cron: '15 7 * * 1-5'
-    - cron: '45 8 * * 1-5'
-  push:
-    branches:
-      - main
   workflow_dispatch:
+
+# Verhindert parallele Runs – zweiter Run wartet oder wird abgebrochen
+concurrency:
+  group: kfw-scraper
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -21,6 +21,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Immer den aktuellen Stand holen, nicht den Stand beim Trigger-Zeitpunkt
+          ref: main
+          fetch-depth: 0
 
       - name: Python Setup
         uses: actions/setup-python@v5
@@ -39,11 +43,29 @@ jobs:
       - name: Inject data into dashboard
         run: python scraper/inject_dashboard.py
 
-      - name: Commit
+      - name: Commit and push
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/kfw_rates.csv data/kfw_programme.json docs/index.html
-          git diff --cached --quiet || git commit -m "data: $(date +'%Y-%m-%d') KfW Zinsupdate"
-          git pull --rebase origin main
-          git push
+
+          # Nichts zu committen → sauber beenden
+          if git diff --cached --quiet; then
+            echo "Keine Änderungen – kein Commit nötig"
+            exit 0
+          fi
+
+          git commit -m "data: $(date +'%Y-%m-%d') KfW Zinsupdate"
+
+          # Bis zu 3 Versuche mit Backoff falls ein anderer Push zeitgleich landet
+          for attempt in 1 2 3; do
+            git pull --rebase=merges origin main \
+              -X ours \
+              -- data/kfw_rates.csv data/kfw_programme.json docs/index.html \
+              && git push origin main && echo "Push erfolgreich (Versuch $attempt)" && exit 0
+            echo "Push fehlgeschlagen, warte $((attempt * 5))s..."
+            sleep $((attempt * 5))
+          done
+
+          echo "Push nach 3 Versuchen fehlgeschlagen"
+          exit 1
