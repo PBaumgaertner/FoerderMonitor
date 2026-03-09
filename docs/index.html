@@ -33,39 +33,44 @@ main{padding:32px 40px;max-width:1400px}
 .section-title span{font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:22px}
 .card-title{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:12px}
+/* Tabelle */
 .rate-table{width:100%;border-collapse:collapse}
-.rate-table th{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);text-align:left;padding:0 10px 10px 0;border-bottom:1px solid var(--border);font-weight:400}
+.rate-table th{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);text-align:left;padding:0 10px 10px 0;border-bottom:1px solid var(--border);font-weight:400;white-space:nowrap}
+.rate-table th.sortable{cursor:pointer;user-select:none}
+.rate-table th.sortable:hover{color:var(--accent)}
+.rate-table th.sort-asc::after{content:' ↑';color:var(--accent)}
+.rate-table th.sort-desc::after{content:' ↓';color:var(--accent)}
 .rate-table td{padding:9px 10px 9px 0;border-bottom:1px solid rgba(33,38,45,.6);font-size:13px;vertical-align:middle}
 .rate-table tr:last-child td{border-bottom:none}
 .rate-table tr:hover td{background:rgba(88,166,255,.04)}
+/* Tags */
 .tag{display:inline-block;font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:500}
 .tag-eh55{background:rgba(210,168,255,.15);color:var(--accent4)}
 .tag-knn{background:rgba(251,191,36,.12);color:#fbbf24}
 .tag-kfw40{background:rgba(88,166,255,.15);color:var(--accent)}
 .tag-qng{background:rgba(63,185,80,.15);color:var(--accent2)}
-.tag-unk{background:rgba(139,148,158,.1);color:var(--muted)}
 .tag-type{background:rgba(139,148,158,.1);color:var(--muted)}
 .rate-val{font-family:var(--mono);font-size:14px;font-weight:500;color:var(--accent)}
+/* Balken */
 .bar-row{margin-bottom:14px}
-.bar-label{display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px}
-.bar-label span:last-child{font-family:var(--mono);color:var(--accent)}
+.bar-label{display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px;align-items:center;gap:6px}
+.bar-label-left{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
 .bar-track{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
 .bar-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+/* Chart */
 .chart-wrap{position:relative;height:260px}
-/* Filter system */
+/* Filter */
 .filter-group{margin-bottom:10px}
 .filter-label{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:5px}
-.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+.filter-row{display:flex;gap:6px;flex-wrap:wrap}
 .filter-btn{font-family:var(--mono);font-size:11px;padding:4px 11px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
 .filter-btn:hover{border-color:var(--accent);color:var(--accent)}
 .filter-btn.active{background:var(--accent);border-color:var(--accent);color:var(--bg)}
-.filter-btn:disabled{opacity:.3;cursor:not-allowed}
+.filter-btn.disabled{opacity:.3;pointer-events:none}
 .filters-wrap{margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
 .empty{text-align:center;padding:40px;color:var(--muted);font-size:13px}
 .inline-delta{font-family:var(--mono);font-size:10px;padding:1px 5px;border-radius:3px;margin-left:6px}
-.top-mover{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(33,38,45,.6)}
-.top-mover:last-child{border-bottom:none}
-.mover-pct{font-family:var(--mono);font-size:18px;font-weight:500}
+.faded{opacity:.4}
 </style>
 </head>
 <body>
@@ -77,12 +82,9 @@ main{padding:32px 40px;max-width:1400px}
   <div class="last-update" id="lastUpdate"><span class="dot"></span>Lade…</div>
 </header>
 <main>
-
-  <!-- KPIs -->
   <div class="kpi-row" id="kpiRow"></div>
-
-  <!-- Chart + Vergleich -->
   <div class="grid-2">
+    <!-- Zinsentwicklung -->
     <div>
       <div class="section-title">Zinsentwicklung <span>Historisch</span></div>
       <div class="card">
@@ -104,6 +106,7 @@ main{padding:32px 40px;max-width:1400px}
         <div class="chart-wrap"><canvas id="timeChart"></canvas></div>
       </div>
     </div>
+    <!-- Programm-Vergleich -->
     <div>
       <div class="section-title">Programm-Vergleich <span>Aktuell</span></div>
       <div class="card">
@@ -121,17 +124,21 @@ main{padding:32px 40px;max-width:1400px}
             <div class="filter-label">Laufzeit</div>
             <div class="filter-row" id="cpLaufzeit"></div>
           </div>
+          <div class="filter-group">
+            <div class="filter-label">Sortierung</div>
+            <div class="filter-row" id="cpSort"></div>
+          </div>
         </div>
         <div id="compBarsInner"></div>
       </div>
     </div>
   </div>
 
-  <!-- Tabelle -->
+  <!-- Aktuelle Konditionen -->
   <div class="section-title">Aktuelle Konditionen <span>Heute</span></div>
   <div class="card" style="margin-bottom:32px">
     <div class="filters-wrap">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
         <div>
           <div class="filter-group">
             <div class="filter-label">Programm</div>
@@ -157,68 +164,138 @@ main{padding:32px 40px;max-width:1400px}
     <div id="rateTableWrap"></div>
   </div>
 
-  <!-- Delta -->
-  <div class="section-title">Zinsänderungen <span id="deltaTitleSpan">Delta zum Vortag</span></div>
+  <!-- Zinsänderungen -->
+  <div class="section-title">Zinsänderungen <span id="deltaTitleSpan">Delta</span></div>
   <div class="card" style="margin-bottom:48px">
-    <div style="display:flex;gap:24px;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap">
+    <div style="display:flex;gap:20px;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap">
       <div>
         <div class="filter-label" style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:5px">Zeitraum</div>
-        <div class="filter-row" id="deltaRange"></div>
+        <div class="filter-row" id="dlRange"></div>
       </div>
       <div>
         <div class="filter-label" style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:5px">Programm</div>
-        <div class="filter-row" id="deltaProg"></div>
+        <div class="filter-row" id="dlProg"></div>
       </div>
       <div>
         <div class="filter-label" style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:5px">Förderstufe</div>
-        <div class="filter-row" id="deltaStufe"></div>
+        <div class="filter-row" id="dlStufe"></div>
+      </div>
+      <div>
+        <div class="filter-label" style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:5px">Sortierung</div>
+        <div class="filter-row" id="dlSort"></div>
+      </div>
+      <div>
+        <div class="filter-label" style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:5px">Richtung</div>
+        <div class="filter-row" id="dlDir"></div>
       </div>
     </div>
     <div id="deltaWrap"></div>
   </div>
-
 </main>
+
 <script>
-// ── INJECT_DATA_START
+// INJECT_DATA_START
 const SEED_DATA = [{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"EH55","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.0,"effektivzins_pct":1.0},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"EH55","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.97,"effektivzins_pct":1.99},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"EH55","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":10,"sollzins_pct":2.12,"effektivzins_pct":2.14},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"EH55","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":2.21,"effektivzins_pct":2.23},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":0.6,"effektivzins_pct":0.6},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.7,"effektivzins_pct":1.71},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.87,"effektivzins_pct":1.89},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.97,"effektivzins_pct":1.99},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":0.6,"effektivzins_pct":0.6},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.7,"effektivzins_pct":1.71},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.87,"effektivzins_pct":1.89},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40+QNG","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.97,"effektivzins_pct":1.99},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"EH55","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.0,"effektivzins_pct":1.0},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"EH55","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.97,"effektivzins_pct":1.99},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"EH55","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":10,"sollzins_pct":2.12,"effektivzins_pct":2.14},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"EH55","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":2.21,"effektivzins_pct":2.23},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":0.6,"effektivzins_pct":0.6},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.7,"effektivzins_pct":1.71},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.87,"effektivzins_pct":1.89},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.97,"effektivzins_pct":1.99},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":0.6,"effektivzins_pct":0.6},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.7,"effektivzins_pct":1.71},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.87,"effektivzins_pct":1.89},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40+QNG","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.97,"effektivzins_pct":1.99},{"date":"2026-03-07","programme_id":"296","programme_name":"Klimafreundlicher Neubau im Niedrigpreissegment (296)","foerderstufe":"KNN","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":0.01,"effektivzins_pct":0.01},{"date":"2026-03-07","programme_id":"296","programme_name":"Klimafreundlicher Neubau im Niedrigpreissegment (296)","foerderstufe":"KNN","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":10,"sollzins_pct":0.51,"effektivzins_pct":0.51},{"date":"2026-03-07","programme_id":"296","programme_name":"Klimafreundlicher Neubau im Niedrigpreissegment (296)","foerderstufe":"KNN","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":10,"sollzins_pct":0.76,"effektivzins_pct":0.76},{"date":"2026-03-07","programme_id":"296","programme_name":"Klimafreundlicher Neubau im Niedrigpreissegment (296)","foerderstufe":"KNN","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":0.9,"effektivzins_pct":0.9},{"date":"2026-03-07","programme_id":"300","programme_name":"Wohneigentum für Familien – Neubau (300)","foerderstufe":"KFW40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":0.01,"effektivzins_pct":0.01},{"date":"2026-03-07","programme_id":"300","programme_name":"Wohneigentum für Familien – Neubau (300)","foerderstufe":"KFW40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":10,"sollzins_pct":0.95,"effektivzins_pct":0.95},{"date":"2026-03-07","programme_id":"300","programme_name":"Wohneigentum für Familien – Neubau (300)","foerderstufe":"KFW40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.17,"effektivzins_pct":1.18},{"date":"2026-03-07","programme_id":"300","programme_name":"Wohneigentum für Familien – Neubau (300)","foerderstufe":"KFW40+QNG","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":1.3,"effektivzins_pct":1.31}];
 // INJECT_DATA_END
 
-async function loadData(){return{data:SEED_DATA,isLive:true};}
+async function loadData(){return{data:SEED_DATA};}
 
-const STUFE_ORDER=['KNN','KFW40','KFW40+QNG','EH55'];
-const STUFE_COL={'EH55':'#d2a8ff','KFW40':'#58a6ff','KFW40+QNG':'#3fb950','KNN':'#fbbf24','Unbekannt':'#8b949e'};
-const PROG_COL=['#58a6ff','#3fb950','#f78166','#d2a8ff','#ffa657'];
-const LAUFZEIT_ORDER=['4 bis 10 Jahre','11 bis 25 Jahre','26 bis 35 Jahre'];
+// ── Konstanten ─────────────────────────────────────────────────────────────────
+// Förderstufen in aufsteigendem energetischem Anforderungsniveau
+const STUFE_ORDER = ['KNN','EH55','KFW40','KFW40+QNG'];
+const STUFE_COL   = {'KNN':'#fbbf24','EH55':'#d2a8ff','KFW40':'#58a6ff','KFW40+QNG':'#3fb950','Unbekannt':'#8b949e'};
+const PROG_COL    = ['#58a6ff','#3fb950','#f78166','#d2a8ff','#ffa657'];
+const LAUFZEIT_ORDER = ['4 bis 10 Jahre','11 bis 25 Jahre','26 bis 35 Jahre'];
+// Endfällig hat nur eine Laufzeitstufe in den KfW-Daten
+const ENDFAELLIG_LAUFZEIT = '4 bis 10 Jahre';
 
 function tagClass(s){
-  if(s==='EH55') return 'tag-eh55';
-  if(s==='KFW40+QNG') return 'tag-qng';
-  if(s==='KNN') return 'tag-knn';
-  return 'tag-kfw40';
+  if(s==='EH55')return'tag-eh55';
+  if(s==='KFW40+QNG')return'tag-qng';
+  if(s==='KNN')return'tag-knn';
+  return'tag-kfw40';
 }
-function tagLabel(s){return s||'–';}
 
-// ── Generic filter button builder ─────────────────────────────────────────────
-function buildBtns(containerId, items, activeItem, onClick){
-  document.getElementById(containerId).innerHTML = items.map(item=>`
-    <button class="filter-btn ${item===activeItem?'active':''}"
-      onclick="(${onClick.toString()})('${item}',this)">${item}</button>`
-  ).join('');
+// Sicheres Min über Array ohne Stack-Overflow-Risiko bei großen Arrays
+function safeMin(arr){return arr.reduce((a,b)=>a<b?a:b, Infinity);}
+
+// ── Filter-State ──────────────────────────────────────────────────────────────
+// CF: Chart-Filter  CP: Vergleich  TB: Tabelle  DL: Delta
+const CF = {stufe:null, art:'Annuitätendarlehen', laufzeit:'26 bis 35 Jahre'};
+const CP = {prog:'Alle', art:'Annuitätendarlehen', laufzeit:'26 bis 35 Jahre', sort:'Zins ↓'};
+const TB = {prog:'Alle', stufe:'Alle', art:'Alle', laufzeit:'Alle', sortCol:null, sortDir:'asc'};
+const DL = {range:'Vortag', prog:'Alle', stufe:'Alle', sort:'Absolut', dir:'Alle'};
+
+// ── Filter-Button-Helpers ─────────────────────────────────────────────────────
+function renderBtns(containerId, items, activeVal){
+  document.getElementById(containerId).innerHTML = items.map(item=>{
+    const esc = item.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<button class="filter-btn${item===activeVal?' active':''}" onclick="onFilter('${containerId}','${esc}',this)">${item}</button>`;
+  }).join('');
 }
 function setActive(containerId, btn){
-  document.querySelectorAll(`#${containerId} .filter-btn`).forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#'+containerId+' .filter-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
 }
-function getActive(containerId){
-  const b=document.querySelector(`#${containerId} .filter-btn.active`);
-  return b?b.textContent:null;
+function setLaufzeitEnabled(groupId, rowId, enabled){
+  document.getElementById(groupId).classList.toggle('faded',!enabled);
+  document.querySelectorAll('#'+rowId+' .filter-btn').forEach(b=>b.classList.toggle('disabled',!enabled));
 }
 
-// ── Global state ──────────────────────────────────────────────────────────────
+// ── Zentraler Filter-Dispatcher ───────────────────────────────────────────────
+function onFilter(containerId, value, btn){
+  setActive(containerId, btn);
+  if     (containerId==='cfStufe')  { CF.stufe=value; buildChart(); }
+  else if(containerId==='cfArt')    { CF.art=value; setLaufzeitEnabled('cfLaufzeitGroup','cfLaufzeit',!value.includes('Endfäl')); buildChart(); }
+  else if(containerId==='cfLaufzeit'){ CF.laufzeit=value; buildChart(); }
+  else if(containerId==='cpProg')   { CP.prog=value; buildComp(); }
+  else if(containerId==='cpArt')    { CP.art=value; setLaufzeitEnabled('cpLaufzeitGroup','cpLaufzeit',!value.includes('Endfäl')); buildComp(); }
+  else if(containerId==='cpLaufzeit'){ CP.laufzeit=value; buildComp(); }
+  else if(containerId==='cpSort')   { CP.sort=value; buildComp(); }
+  else if(containerId==='tbProg')   { TB.prog=value; buildTable(); }
+  else if(containerId==='tbStufe')  { TB.stufe=value; buildTable(); }
+  else if(containerId==='tbArt')    { TB.art=value; buildTable(); }
+  else if(containerId==='tbLaufzeit'){ TB.laufzeit=value; buildTable(); }
+  else if(containerId==='dlRange')  { DL.range=value; buildDelta(); }
+  else if(containerId==='dlProg')   { DL.prog=value; buildDelta(); }
+  else if(containerId==='dlStufe')  { DL.stufe=value; buildDelta(); }
+  else if(containerId==='dlSort')   { DL.sort=value; buildDelta(); }
+  else if(containerId==='dlDir')    { DL.dir=value; buildDelta(); }
+}
+
+// Tabellen-Spalten-Sortierung (Klick auf Spaltenköpfe)
+function onSortCol(col, thEl){
+  if(TB.sortCol===col){
+    TB.sortDir = TB.sortDir==='asc'?'desc':'asc';
+  } else {
+    TB.sortCol=col; TB.sortDir='asc';
+  }
+  buildTable();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
 window._allData=[];window._dates=[];window._today=[];window._yest=[];
 
 async function init(){
   const{data}=await loadData();
+
+  // Bug-Fix 1: programme_id als String normalisieren (CSV-Inject liefert ggf. 297.0)
+  data.forEach(r=>{
+    if(r.programme_id!==undefined)
+      r.programme_id=String(r.programme_id).replace(/\.0$/,'');
+    if(r.zinsbindung_jahre!==undefined&&r.zinsbindung_jahre!==null&&r.zinsbindung_jahre!=='')
+      r.zinsbindung_jahre=String(r.zinsbindung_jahre).replace(/\.0$/,'');
+  });
+
+  // Bug-Fix 7: leere Daten abfangen
+  if(!data.length){
+    document.getElementById('lastUpdate').innerHTML=
+      '<span class="dot" style="background:#f78166"></span>Keine Daten verfügbar';
+    document.getElementById('kpiRow').innerHTML=
+      '<div style="color:var(--muted);font-size:13px;padding:20px 0">Keine Daten im Datensatz – nächster Scraper-Lauf ausstehend.</div>';
+    return;
+  }
+
   window._allData=data;
   const dates=[...new Set(data.map(r=>r.date))].sort();
   window._dates=dates;
@@ -226,108 +303,125 @@ async function init(){
   const prev=dates[dates.length-2]||null;
   window._today=data.filter(r=>r.date===latest);
   window._yest=prev?data.filter(r=>r.date===prev):[];
-  document.getElementById('lastUpdate').innerHTML=`<span class="dot"></span>Stand: <strong>${latest}</strong>`;
-  renderKPIs(window._today,window._yest,data);
-  initChart(data,dates);
-  initComp(window._today);
-  initTable(window._today,window._yest);
-  initDelta(data,dates);
+
+  document.getElementById('lastUpdate').innerHTML=
+    '<span class="dot"></span>Stand: <strong>'+latest+'</strong>';
+
+  // CF.stufe auf ersten vorhandenen Wert setzen (nicht hardcoded)
+  CF.stufe = STUFE_ORDER.find(s=>data.some(r=>r.foerderstufe===s)) || STUFE_ORDER[2];
+
+  renderKPIs();
+  initChart();
+  initComp();
+  initTable();
+  initDelta();
 }
 
 // ── KPIs ──────────────────────────────────────────────────────────────────────
-function renderKPIs(today,yest,allData){
+function renderKPIs(){
+  const today=window._today, yest=window._yest;
   const cards=[];
-  // Niedrigster Effektivzins
+
+  // Niedrigster Effektivzins gesamt
   const vals=today.map(r=>parseFloat(r.effektivzins_pct)).filter(v=>!isNaN(v)&&v>0);
   if(vals.length){
-    const minV=Math.min(...vals);
+    const minV=safeMin(vals);
     const minR=today.find(r=>parseFloat(r.effektivzins_pct)===minV);
-    cards.push({label:'Niedrigster Effektivzins',value:minV.toFixed(2)+' %',
-      sub:`${minR.programme_id} · ${minR.foerderstufe} · ${minR.laufzeit_label}`,
+    cards.push({label:'Niedrigster Effektivzins',
+      value:minV.toFixed(2)+' %',
+      sub:minR.programme_id+' · '+minR.foerderstufe+' · '+minR.laufzeit_label,
       delta:calcDelta(minV,yest,minR)});
   }
-  // KfW 297 – Annuität 26-35J, beste Förderstufe
+
+  // KfW 297 – beste Annuität 26–35J
   const r297=today.filter(r=>r.programme_id==='297'&&r.darlehensart==='Annuitätendarlehen'&&r.laufzeit_label.includes('26'));
   if(r297.length){
     const vs=r297.map(r=>parseFloat(r.effektivzins_pct)).filter(v=>!isNaN(v)&&v>0);
     if(vs.length){
-      const best=Math.min(...vs);
+      const best=safeMin(vs);
       const bestR=r297.find(r=>parseFloat(r.effektivzins_pct)===best);
       cards.push({label:'KfW 297 · 26–35J Annuität',value:best.toFixed(2)+' %',
-        sub:`${bestR.foerderstufe} · beste Konditionen`,delta:calcDelta(best,yest,bestR)});
+        sub:bestR.foerderstufe+' · beste Förderstufe',delta:calcDelta(best,yest,bestR)});
     }
   }
-  // KfW 298 – Annuität 26-35J
+
+  // KfW 298 – beste Annuität 26–35J
   const r298=today.filter(r=>r.programme_id==='298'&&r.darlehensart==='Annuitätendarlehen'&&r.laufzeit_label.includes('26'));
   if(r298.length){
     const vs=r298.map(r=>parseFloat(r.effektivzins_pct)).filter(v=>!isNaN(v)&&v>0);
     if(vs.length){
-      const best=Math.min(...vs);
+      const best=safeMin(vs);
       const bestR=r298.find(r=>parseFloat(r.effektivzins_pct)===best);
       cards.push({label:'KfW 298 · 26–35J Annuität',value:best.toFixed(2)+' %',
-        sub:`${bestR.foerderstufe} · beste Konditionen`,delta:calcDelta(best,yest,bestR)});
+        sub:bestR.foerderstufe+' · beste Förderstufe',delta:calcDelta(best,yest,bestR)});
     }
   }
-  // Größte relative Änderung
+
+  // Größte relative Veränderung
   if(yest.length){
-    let topMover=null,topPct=0;
+    let top=null, topPct=0;
     today.forEach(r=>{
-      const p=yest.find(y=>y.programme_id===r.programme_id&&y.foerderstufe===r.foerderstufe&&y.darlehensart===r.darlehensart&&y.laufzeit_label===r.laufzeit_label);
+      const p=yest.find(y=>matchRow(y,r));
       if(!p)return;
-      const cur=parseFloat(r.effektivzins_pct),prev=parseFloat(p.effektivzins_pct);
-      if(!prev||prev===0)return;
+      const cur=parseFloat(r.effektivzins_pct), prev=parseFloat(p.effektivzins_pct);
+      if(!prev||prev===0||isNaN(cur)||isNaN(prev))return;
       const pct=Math.abs((cur-prev)/prev*100);
-      if(pct>topPct){topPct=pct;topMover={...r,prevVal:prev,diff:cur-prev};}
+      if(pct>topPct){topPct=pct; top={...r,prevVal:prev,diff:cur-prev};}
     });
-    if(topMover&&topPct>0.01){
-      cards.push({label:'Größte Veränderung',
-        value:(topMover.diff>0?'+':'')+topMover.diff.toFixed(2)+' %',
-        sub:`${topMover.programme_id} · ${topMover.foerderstufe} · ${topMover.laufzeit_label}`,
-        delta:`<span class="kpi-delta ${topMover.diff>0?'delta-up':'delta-down'}">${topMover.diff>0?'▲':'▼'} ${topPct.toFixed(1)} % relativ</span>`});
+    if(top&&topPct>0.01){
+      cards.push({label:'Größte Veränderung (relativ)',
+        value:(top.diff>0?'+':'')+top.diff.toFixed(2)+' %',
+        sub:top.programme_id+' · '+top.foerderstufe+' · '+top.laufzeit_label,
+        delta:'<span class="kpi-delta '+(top.diff>0?'delta-up':'delta-down')+'">'+(top.diff>0?'▲':'▼')+' '+topPct.toFixed(1)+' % relativ</span>'});
     }
   }
-  document.getElementById('kpiRow').innerHTML=cards.map(c=>`
-    <div class="kpi">
-      <div class="kpi-label">${c.label}</div>
-      <div class="kpi-value">${c.value}</div>
-      <div class="kpi-sub">${c.sub}</div>
-      ${c.delta}
-    </div>`).join('');
+
+  document.getElementById('kpiRow').innerHTML=cards.map(c=>
+    '<div class="kpi">'
+    +'<div class="kpi-label">'+c.label+'</div>'
+    +'<div class="kpi-value">'+c.value+'</div>'
+    +'<div class="kpi-sub">'+c.sub+'</div>'
+    +c.delta
+    +'</div>'
+  ).join('');
 }
 
-function calcDelta(cur,yest,ref){
-  if(!yest.length||!ref)return'';
-  const p=yest.find(r=>r.programme_id===ref.programme_id&&r.foerderstufe===ref.foerderstufe&&r.darlehensart===ref.darlehensart&&r.laufzeit_label===ref.laufzeit_label);
+// Hilfsfunktion: Row-Identität für Vergleiche
+function matchRow(a, b){
+  return a.programme_id===b.programme_id
+      && a.foerderstufe===b.foerderstufe
+      && a.darlehensart===b.darlehensart
+      && a.laufzeit_label===b.laufzeit_label;
+}
+
+function calcDelta(cur, yest, ref){
+  if(!yest||!yest.length||!ref)return'';
+  const p=yest.find(r=>matchRow(r,ref));
   if(!p)return'';
   const diff=cur-parseFloat(p.effektivzins_pct);
-  if(isNaN(diff)||Math.abs(diff)<0.001)return`<span class="kpi-delta delta-flat">= unverändert</span>`;
-  return diff>0?`<span class="kpi-delta delta-up">▲ +${diff.toFixed(2)} %</span>`:`<span class="kpi-delta delta-down">▼ ${diff.toFixed(2)} %</span>`;
+  if(isNaN(diff)||Math.abs(diff)<0.001)return'<span class="kpi-delta delta-flat">= unverändert</span>';
+  return diff>0
+    ?'<span class="kpi-delta delta-up">▲ +'+diff.toFixed(2)+' %</span>'
+    :'<span class="kpi-delta delta-down">▼ '+diff.toFixed(2)+' %</span>';
 }
 
 // ── Chart ─────────────────────────────────────────────────────────────────────
 let _chart=null;
-const CF={stufe:'KFW40',art:'Annuitätendarlehen',laufzeit:'26 bis 35 Jahre'};
-
-function initChart(data,dates){
+function initChart(){
+  const data=window._allData;
   const stufen=STUFE_ORDER.filter(s=>data.some(r=>r.foerderstufe===s));
   const laufzeiten=LAUFZEIT_ORDER.filter(l=>data.some(r=>r.laufzeit_label===l));
-
-  buildBtns('cfStufe',stufen,CF.stufe,(v,b)=>{CF.stufe=v;setActive('cfStufe',b);buildChart();});
-  buildBtns('cfArt',['Annuitätendarlehen','Endfälliges Darlehen'],CF.art,(v,b)=>{
-    CF.art=v;setActive('cfArt',b);
-    const isEndf=v.includes('Endfäl');
-    document.getElementById('cfLaufzeitGroup').style.opacity=isEndf?'.4':'1';
-    document.querySelectorAll('#cfLaufzeit .filter-btn').forEach(b=>b.disabled=isEndf);
-    if(isEndf)CF.laufzeit='4 bis 10 Jahre';
-    buildChart();
-  });
-  buildBtns('cfLaufzeit',laufzeiten,CF.laufzeit,(v,b)=>{CF.laufzeit=v;setActive('cfLaufzeit',b);buildChart();});
+  renderBtns('cfStufe', stufen, CF.stufe);
+  renderBtns('cfArt', ['Annuitätendarlehen','Endfälliges Darlehen'], CF.art);
+  renderBtns('cfLaufzeit', laufzeiten, CF.laufzeit);
   buildChart();
 }
-
 function buildChart(){
-  const data=window._allData,dates=window._dates;
-  const lauf=CF.art.includes('Endfäl')?'4 bis 10 Jahre':CF.laufzeit;
+  const data=window._allData, dates=window._dates;
+  const isEndf=CF.art.includes('Endfäl');
+  // Bug-Fix 4: Endfällig-Laufzeit aus Daten ableiten statt hardcoded
+  const endfLauf=data.find(r=>r.darlehensart===CF.art)?.laufzeit_label||ENDFAELLIG_LAUFZEIT;
+  const lauf=isEndf?endfLauf:CF.laufzeit;
   const pids=[...new Set(data.map(r=>r.programme_id))].sort();
   const datasets=pids.map((pid,i)=>{
     const pts=dates.map(d=>{
@@ -335,177 +429,248 @@ function buildChart(){
       const vs=rs.map(r=>parseFloat(r.effektivzins_pct)).filter(v=>!isNaN(v)&&v>0);
       return vs.length?vs[0]:null;
     });
-    return pts.some(p=>p!==null)?{label:`KfW ${pid}`,data:pts,
-      borderColor:PROG_COL[i%PROG_COL.length],backgroundColor:PROG_COL[i%PROG_COL.length]+'18',
-      borderWidth:2,pointRadius:3,pointHoverRadius:5,tension:.3,fill:false,spanGaps:true}:null;
+    if(!pts.some(p=>p!==null))return null;
+    return{label:'KfW '+pid, data:pts,
+      borderColor:PROG_COL[i%PROG_COL.length], backgroundColor:PROG_COL[i%PROG_COL.length]+'18',
+      borderWidth:2, pointRadius:3, pointHoverRadius:5, tension:.3, fill:false, spanGaps:true};
   }).filter(Boolean);
-  const artLabel=CF.art.includes('Annuit')?'Annuität':'Endfällig';
-  document.getElementById('chartTitle').textContent=`Effektivzins · ${CF.stufe} · ${lauf} · ${artLabel}`;
+
+  const artLabel=isEndf?'Endfällig':'Annuität';
+  document.getElementById('chartTitle').textContent='Effektivzins · '+CF.stufe+' · '+lauf+' · '+artLabel;
   const ctx=document.getElementById('timeChart').getContext('2d');
   if(_chart)_chart.destroy();
   _chart=new Chart(ctx,{type:'line',data:{labels:dates,datasets},options:{
-    responsive:true,maintainAspectRatio:false,
+    responsive:true, maintainAspectRatio:false,
     interaction:{mode:'index',intersect:false},
-    plugins:{legend:{labels:{color:'#8b949e',font:{family:'DM Mono',size:11},boxWidth:12,padding:16}},
+    plugins:{
+      legend:{labels:{color:'#8b949e',font:{family:'DM Mono',size:11},boxWidth:12,padding:16}},
       tooltip:{backgroundColor:'#1c2128',borderColor:'#30363d',borderWidth:1,
         titleColor:'#8b949e',bodyColor:'#e6edf3',bodyFont:{family:'DM Mono',size:12},
-        callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y?.toFixed(2)} %`}}},
+        callbacks:{label:c=>' '+c.dataset.label+': '+(c.parsed.y!=null?c.parsed.y.toFixed(2):'–')+' %'}}
+    },
     scales:{
       x:{ticks:{color:'#8b949e',font:{family:'DM Mono',size:10},maxTicksLimit:8},grid:{color:'#21262d'}},
       y:{ticks:{color:'#8b949e',font:{family:'DM Mono',size:10},callback:v=>v.toFixed(2)+' %'},grid:{color:'#21262d'}}
-    }}});
+    }
+  }});
 }
 
-// ── Vergleich ─────────────────────────────────────────────────────────────────
-const CP={prog:'Alle',art:'Annuitätendarlehen',laufzeit:'26 bis 35 Jahre'};
-
-function initComp(today){
-  const pids=['Alle',...new Set(today.map(r=>r.programme_id))].filter((v,i,a)=>a.indexOf(v)===i);
+// ── Programm-Vergleich ────────────────────────────────────────────────────────
+function initComp(){
+  const today=window._today;
+  const pids=['Alle',...[...new Set(today.map(r=>r.programme_id))].sort()];
   const laufzeiten=LAUFZEIT_ORDER.filter(l=>today.some(r=>r.laufzeit_label===l));
-  buildBtns('cpProg',pids,CP.prog,(v,b)=>{CP.prog=v;setActive('cpProg',b);buildComp();});
-  buildBtns('cpArt',['Annuitätendarlehen','Endfälliges Darlehen'],CP.art,(v,b)=>{
-    CP.art=v;setActive('cpArt',b);
-    const isEndf=v.includes('Endfäl');
-    document.getElementById('cpLaufzeitGroup').style.opacity=isEndf?'.4':'1';
-    document.querySelectorAll('#cpLaufzeit .filter-btn').forEach(b=>b.disabled=isEndf);
-    if(isEndf)CP.laufzeit='4 bis 10 Jahre';
-    buildComp();
-  });
-  buildBtns('cpLaufzeit',laufzeiten,CP.laufzeit,(v,b)=>{CP.laufzeit=v;setActive('cpLaufzeit',b);buildComp();});
+  renderBtns('cpProg', pids, CP.prog);
+  renderBtns('cpArt', ['Annuitätendarlehen','Endfälliges Darlehen'], CP.art);
+  renderBtns('cpLaufzeit', laufzeiten, CP.laufzeit);
+  renderBtns('cpSort', ['Zins ↓','Programm'], CP.sort);
   buildComp();
 }
-
 function buildComp(){
   const today=window._today;
-  const lauf=CP.art.includes('Endfäl')?'4 bis 10 Jahre':CP.laufzeit;
+  const isEndf=CP.art.includes('Endfäl');
+  // Bug-Fix 4: Endfällig-Laufzeit dynamisch
+  const endfLauf=today.find(r=>r.darlehensart===CP.art)?.laufzeit_label||ENDFAELLIG_LAUFZEIT;
+  const lauf=isEndf?endfLauf:CP.laufzeit;
   let rows=today.filter(r=>r.darlehensart===CP.art&&r.laufzeit_label===lauf&&parseFloat(r.effektivzins_pct)>0);
-  if(CP.prog!=='Alle')rows=rows.filter(r=>r.programme_id===CP.prog);
-  const artLabel=CP.art.includes('Annuit')?'Annuität':'Endfällig';
-  document.getElementById('compTitle').textContent=`Effektivzins · ${lauf} · ${artLabel}`;
+  if(CP.prog!=='Alle')rows=rows.filter(r=>String(r.programme_id)===String(CP.prog));
+
+  // Sortierung
+  if(CP.sort==='Zins ↓'){
+    rows=[...rows].sort((a,b)=>parseFloat(a.effektivzins_pct)-parseFloat(b.effektivzins_pct));
+  } else {
+    // Programm-Gruppierung: nach Programm-ID, dann Förderstufe nach STUFE_ORDER
+    rows=[...rows].sort((a,b)=>{
+      if(a.programme_id!==b.programme_id)return a.programme_id.localeCompare(b.programme_id);
+      return STUFE_ORDER.indexOf(a.foerderstufe)-STUFE_ORDER.indexOf(b.foerderstufe);
+    });
+  }
+
+  const artLabel=isEndf?'Endfällig':'Annuität';
+  document.getElementById('compTitle').textContent='Effektivzins · '+lauf+' · '+artLabel;
   if(!rows.length){document.getElementById('compBarsInner').innerHTML='<div class="empty">Keine Daten</div>';return;}
-  const max=Math.max(...rows.map(r=>parseFloat(r.effektivzins_pct)));
+
+  const max=rows.reduce((a,r)=>Math.max(a,parseFloat(r.effektivzins_pct)),0);
   document.getElementById('compBarsInner').innerHTML=rows.map(r=>{
     const v=parseFloat(r.effektivzins_pct);
     const col=STUFE_COL[r.foerderstufe]||'#8b949e';
-    return`<div class="bar-row">
-      <div class="bar-label">
-        <span>
-          <span class="tag ${tagClass(r.foerderstufe)}">${tagLabel(r.foerderstufe)}</span>
-          <strong style="font-size:12px"> ${r.programme_id}</strong>
-          <span style="color:var(--muted);font-size:11px"> · ${r.programme_name}</span>
-        </span>
-        <span>${v.toFixed(2)} %</span>
-      </div>
-      <div class="bar-track"><div class="bar-fill" style="width:${(v/(max*1.15)*100).toFixed(1)}%;background:${col}"></div></div>
-    </div>`;
+    return '<div class="bar-row">'
+      +'<div class="bar-label">'
+      +'<div class="bar-label-left">'
+      +'<span class="tag '+tagClass(r.foerderstufe)+'">'+r.foerderstufe+'</span>'
+      +'<strong style="font-size:12px"> KfW '+r.programme_id+'</strong>'
+      +'<span style="color:var(--muted);font-size:11px"> · '+r.programme_name+'</span>'
+      +'</div>'
+      +'<span style="font-family:var(--mono);color:var(--accent)">'+v.toFixed(2)+' %</span>'
+      +'</div>'
+      +'<div class="bar-track"><div class="bar-fill" style="width:'+(v/(max*1.15)*100).toFixed(1)+'%;background:'+col+'"></div></div>'
+      +'</div>';
   }).join('');
 }
 
 // ── Tabelle ───────────────────────────────────────────────────────────────────
-const TB={prog:'Alle',stufe:'Alle',art:'Alle',laufzeit:'Alle'};
-
-function initTable(today,yest){
-  const pids=['Alle',...new Set(today.map(r=>r.programme_id))];
+function initTable(){
+  const today=window._today;
+  const pids=['Alle',...[...new Set(today.map(r=>r.programme_id))].sort()];
   const stufen=['Alle',...STUFE_ORDER.filter(s=>today.some(r=>r.foerderstufe===s))];
   const laufzeiten=['Alle',...LAUFZEIT_ORDER.filter(l=>today.some(r=>r.laufzeit_label===l))];
-  buildBtns('tbProg',pids,TB.prog,(v,b)=>{TB.prog=v;setActive('tbProg',b);buildTable();});
-  buildBtns('tbStufe',stufen,TB.stufe,(v,b)=>{TB.stufe=v;setActive('tbStufe',b);buildTable();});
-  buildBtns('tbArt',['Alle','Annuitätendarlehen','Endfälliges Darlehen'],TB.art,(v,b)=>{TB.art=v;setActive('tbArt',b);buildTable();});
-  buildBtns('tbLaufzeit',laufzeiten,TB.laufzeit,(v,b)=>{TB.laufzeit=v;setActive('tbLaufzeit',b);buildTable();});
+  renderBtns('tbProg', pids, TB.prog);
+  renderBtns('tbStufe', stufen, TB.stufe);
+  renderBtns('tbArt', ['Alle','Annuitätendarlehen','Endfälliges Darlehen'], TB.art);
+  renderBtns('tbLaufzeit', laufzeiten, TB.laufzeit);
   buildTable();
 }
 
+// Sortierfunktion für Tabellen-Rows
+function sortRows(rows){
+  if(!TB.sortCol)return[...rows].sort((a,b)=>{
+    // Default: Effektivzins aufsteigend
+    return parseFloat(a.effektivzins_pct)-parseFloat(b.effektivzins_pct);
+  });
+  const dir=TB.sortDir==='asc'?1:-1;
+  return[...rows].sort((a,b)=>{
+    if(TB.sortCol==='effektivzins_pct'||TB.sortCol==='sollzins_pct'){
+      return(parseFloat(a[TB.sortCol])-parseFloat(b[TB.sortCol]))*dir;
+    }
+    if(TB.sortCol==='laufzeit_label'){
+      return LAUFZEIT_ORDER.indexOf(a.laufzeit_label)>LAUFZEIT_ORDER.indexOf(b.laufzeit_label)?dir:-dir;
+    }
+    return a[TB.sortCol].localeCompare(b[TB.sortCol])*dir;
+  });
+}
+
+function thSort(col, label){
+  const isActive=TB.sortCol===col;
+  const cls='sortable'+(isActive?' sort-'+TB.sortDir:'');
+  return'<th class="'+cls+'" onclick="onSortCol(\''+col+'\')">'+label+'</th>';
+}
+
 function buildTable(){
-  const today=window._today,yest=window._yest;
+  const today=window._today, yest=window._yest;
   let rows=today;
-  if(TB.prog!=='Alle')rows=rows.filter(r=>r.programme_id===TB.prog);
-  if(TB.stufe!=='Alle')rows=rows.filter(r=>r.foerderstufe===TB.stufe);
-  if(TB.art!=='Alle')rows=rows.filter(r=>r.darlehensart===TB.art);
+  if(TB.prog!=='Alle')  rows=rows.filter(r=>r.programme_id===TB.prog);
+  if(TB.stufe!=='Alle') rows=rows.filter(r=>r.foerderstufe===TB.stufe);
+  if(TB.art!=='Alle')   rows=rows.filter(r=>r.darlehensart===TB.art);
   if(TB.laufzeit!=='Alle')rows=rows.filter(r=>r.laufzeit_label===TB.laufzeit);
-  if(!rows.length){document.getElementById('rateTableWrap').innerHTML='<div class="empty">Keine Daten für diese Filter-Kombination</div>';return;}
+  if(!rows.length){document.getElementById('rateTableWrap').innerHTML='<div class="empty">Keine Daten für diese Kombination</div>';return;}
+
+  rows=sortRows(rows);
+
   const trs=rows.map(r=>{
     const eff=parseFloat(r.effektivzins_pct);
-    const p=yest.find(y=>y.programme_id===r.programme_id&&y.foerderstufe===r.foerderstufe&&y.darlehensart===r.darlehensart&&y.laufzeit_label===r.laufzeit_label);
+    const p=yest.find(y=>matchRow(y,r));
     let delta='';
-    if(p){const diff=eff-parseFloat(p.effektivzins_pct);if(Math.abs(diff)>0.001)delta=diff>0
-      ?`<span class="inline-delta" style="background:rgba(247,129,102,.15);color:var(--accent3)">▲ +${diff.toFixed(2)}</span>`
-      :`<span class="inline-delta" style="background:rgba(63,185,80,.15);color:var(--accent2)">▼ ${diff.toFixed(2)}</span>`;}
-    return`<tr>
-      <td><strong style="font-size:12px">${r.programme_id}</strong>
-        <div style="font-size:10px;color:var(--muted);margin-top:2px;max-width:180px;line-height:1.3">${r.programme_name}</div></td>
-      <td><span class="tag ${tagClass(r.foerderstufe)}">${tagLabel(r.foerderstufe)}</span></td>
-      <td><span class="tag tag-type" style="font-size:9px">${r.darlehensart.includes('Annuit')?'Annuität':'Endfällig'}</span></td>
-      <td style="color:var(--muted);font-size:12px">${r.laufzeit_label}</td>
-      <td style="font-family:var(--mono);color:var(--muted)">${r.zinsbindung_jahre||'–'}${r.zinsbindung_jahre?' J.':''}</td>
-      <td style="font-family:var(--mono);color:var(--muted)">${r.sollzins_pct||'–'} %</td>
-      <td><span class="rate-val">${r.effektivzins_pct||'–'} %</span>${delta}</td>
-    </tr>`;
+    if(p){
+      const diff=eff-parseFloat(p.effektivzins_pct);
+      if(!isNaN(diff)&&Math.abs(diff)>0.001)delta=diff>0
+        ?'<span class="inline-delta" style="background:rgba(247,129,102,.15);color:var(--accent3)">▲ +'+diff.toFixed(2)+'</span>'
+        :'<span class="inline-delta" style="background:rgba(63,185,80,.15);color:var(--accent2)">▼ '+diff.toFixed(2)+'</span>';
+    }
+    return'<tr>'
+      +'<td><strong style="font-size:12px">'+r.programme_id+'</strong>'
+      +'<div style="font-size:10px;color:var(--muted);margin-top:2px;max-width:180px;line-height:1.3">'+r.programme_name+'</div></td>'
+      +'<td><span class="tag '+tagClass(r.foerderstufe)+'">'+r.foerderstufe+'</span></td>'
+      +'<td><span class="tag tag-type" style="font-size:9px">'+(r.darlehensart.includes('Annuit')?'Annuität':'Endfällig')+'</span></td>'
+      +'<td style="color:var(--muted);font-size:12px">'+r.laufzeit_label+'</td>'
+      +'<td style="font-family:var(--mono);color:var(--muted)">'+(r.zinsbindung_jahre||'–')+(r.zinsbindung_jahre?' J.':'')+'</td>'
+      +'<td style="font-family:var(--mono);color:var(--muted)">'+(r.sollzins_pct||'–')+' %</td>'
+      +'<td><span class="rate-val">'+(r.effektivzins_pct||'–')+' %</span>'+delta+'</td>'
+      +'</tr>';
   }).join('');
-  document.getElementById('rateTableWrap').innerHTML=`
-    <table class="rate-table">
-      <thead><tr><th>Programm</th><th>Förderstufe</th><th>Darlehen</th><th>Laufzeit</th><th>Zinsbindung</th><th>Sollzins</th><th>Effektivzins</th></tr></thead>
-      <tbody>${trs}</tbody>
-    </table>`;
+
+  document.getElementById('rateTableWrap').innerHTML=
+    '<table class="rate-table"><thead><tr>'
+    +'<th>Programm</th>'
+    +'<th>Förderstufe</th>'
+    +'<th>Darlehen</th>'
+    +thSort('laufzeit_label','Laufzeit')
+    +'<th>Zinsbindung</th>'
+    +thSort('sollzins_pct','Sollzins')
+    +thSort('effektivzins_pct','Effektivzins')
+    +'</tr></thead><tbody>'+trs+'</tbody></table>';
 }
 
 // ── Delta ─────────────────────────────────────────────────────────────────────
-const DL={range:'Vortag',prog:'Alle',stufe:'Alle'};
-
-function initDelta(allData,dates){
-  const pids=['Alle',...new Set(allData.map(r=>r.programme_id))];
+function initDelta(){
+  const allData=window._allData;
+  const pids=['Alle',...[...new Set(allData.map(r=>r.programme_id))].sort()];
   const stufen=['Alle',...STUFE_ORDER.filter(s=>allData.some(r=>r.foerderstufe===s))];
-  buildBtns('deltaRange',['Vortag','1 Woche','1 Monat','3 Monate'],DL.range,(v,b)=>{DL.range=v;setActive('deltaRange',b);buildDelta();});
-  buildBtns('deltaProg',pids,DL.prog,(v,b)=>{DL.prog=v;setActive('deltaProg',b);buildDelta();});
-  buildBtns('deltaStufe',stufen,DL.stufe,(v,b)=>{DL.stufe=v;setActive('deltaStufe',b);buildDelta();});
+  renderBtns('dlRange',  ['Vortag','1 Woche','1 Monat','3 Monate'], DL.range);
+  renderBtns('dlProg',   pids, DL.prog);
+  renderBtns('dlStufe',  stufen, DL.stufe);
+  renderBtns('dlSort',   ['Absolut','Relativ'], DL.sort);
+  renderBtns('dlDir',    ['Alle','Nur Anstiege','Nur Senkungen'], DL.dir);
   buildDelta();
 }
-
 function buildDelta(){
-  const allData=window._allData,dates=window._dates;
+  const allData=window._allData, dates=window._dates;
   const latest=dates[dates.length-1];
   const today=allData.filter(r=>r.date===latest);
-  // Zieldatum bestimmen
-  const rangeDays={'Vortag':1,'1 Woche':7,'1 Monat':30,'3 Monate':90};
-  const days=rangeDays[DL.range]||1;
-  const refDate=new Date(latest);refDate.setDate(refDate.getDate()-days);
-  // Nächstes verfügbares Datum in der Vergangenheit finden
-  const pastDates=dates.filter(d=>d<latest).reverse();
+
+  // Referenzdatum ermitteln
+  const days={'Vortag':1,'1 Woche':7,'1 Monat':30,'3 Monate':90}[DL.range]||1;
+  const refDate=new Date(latest); refDate.setDate(refDate.getDate()-days);
   const refDateStr=refDate.toISOString().slice(0,10);
+  const pastDates=dates.filter(d=>d<latest).sort().reverse();
   const compareDate=pastDates.find(d=>d<=refDateStr)||pastDates[0];
-  document.getElementById('deltaTitleSpan').textContent=
-    DL.range===`Vortag`?`Delta zum Vortag`:`Delta · ${DL.range}`;
+
+  document.getElementById('deltaTitleSpan').textContent='Delta · '+DL.range;
   if(!compareDate){document.getElementById('deltaWrap').innerHTML='<div class="empty">Noch keine Vergleichsdaten</div>';return;}
   const ref=allData.filter(r=>r.date===compareDate);
-  // Filter anwenden
+
+  // Filter
   let rows=today;
-  if(DL.prog!=='Alle')rows=rows.filter(r=>r.programme_id===DL.prog);
-  if(DL.stufe!=='Alle')rows=rows.filter(r=>r.foerderstufe===DL.stufe);
-  const changes=rows.map(r=>{
-    const p=ref.find(y=>y.programme_id===r.programme_id&&y.foerderstufe===r.foerderstufe&&y.darlehensart===r.darlehensart&&y.laufzeit_label===r.laufzeit_label);
+  if(DL.prog!=='Alle')  rows=rows.filter(r=>r.programme_id===DL.prog);
+  if(DL.stufe!=='Alle') rows=rows.filter(r=>r.foerderstufe===DL.stufe);
+
+  // Delta berechnen
+  let changes=rows.map(r=>{
+    const p=ref.find(y=>matchRow(y,r));
     if(!p)return null;
-    const cur=parseFloat(r.effektivzins_pct),prev=parseFloat(p.effektivzins_pct);
+    const cur=parseFloat(r.effektivzins_pct), prev=parseFloat(p.effektivzins_pct);
+    if(isNaN(cur)||isNaN(prev))return null;
     const diff=cur-prev;
     const relPct=prev>0?Math.abs(diff/prev*100):0;
     return Math.abs(diff)>0.001?{...r,diff,relPct,prevVal:prev}:null;
-  }).filter(Boolean).sort((a,b)=>Math.abs(b.diff)-Math.abs(a.diff));
-  if(!changes.length){
-    document.getElementById('deltaWrap').innerHTML=`<div class="empty" style="color:var(--accent2)">✓ Keine Änderungen zwischen ${compareDate} und ${latest}</div>`;return;
+  }).filter(Boolean);
+
+  // Richtungsfilter
+  if(DL.dir==='Nur Anstiege')   changes=changes.filter(c=>c.diff>0);
+  if(DL.dir==='Nur Senkungen')  changes=changes.filter(c=>c.diff<0);
+
+  // Sortierung
+  if(DL.sort==='Relativ'){
+    changes.sort((a,b)=>b.relPct-a.relPct);
+  } else {
+    changes.sort((a,b)=>Math.abs(b.diff)-Math.abs(a.diff));
   }
-  document.getElementById('deltaWrap').innerHTML=`
-    <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:12px">${compareDate} → ${latest} · ${changes.length} Änderung(en)</div>
-    <table class="rate-table">
-      <thead><tr><th>Programm</th><th>Förderstufe</th><th>Darlehen</th><th>Laufzeit</th><th>Vorher</th><th>Jetzt</th><th>Absolut</th><th>Relativ</th></tr></thead>
-      <tbody>${changes.map(c=>`<tr>
-        <td><strong>${c.programme_id}</strong></td>
-        <td><span class="tag ${tagClass(c.foerderstufe)}">${tagLabel(c.foerderstufe)}</span></td>
-        <td><span class="tag tag-type" style="font-size:9px">${c.darlehensart.includes('Annuit')?'Annuität':'Endfällig'}</span></td>
-        <td style="color:var(--muted);font-size:12px">${c.laufzeit_label}</td>
-        <td style="font-family:var(--mono);color:var(--muted)">${c.prevVal.toFixed(2)} %</td>
-        <td style="font-family:var(--mono);color:var(--accent)">${parseFloat(c.effektivzins_pct).toFixed(2)} %</td>
-        <td style="font-family:var(--mono);color:${c.diff>0?'var(--accent3)':'var(--accent2)'}">${c.diff>0?'▲ +':'▼ '}${c.diff.toFixed(2)} %</td>
-        <td style="font-family:var(--mono);color:${c.diff>0?'var(--accent3)':'var(--accent2)'}">${c.diff>0?'+':''}${c.relPct.toFixed(1)} %</td>
-      </tr>`).join('')}</tbody>
-    </table>`;
+
+  if(!changes.length){
+    document.getElementById('deltaWrap').innerHTML=
+      '<div class="empty" style="color:var(--accent2)">✓ Keine Änderungen zwischen '+compareDate+' und '+latest+'</div>';
+    return;
+  }
+
+  const rows_html=changes.map(c=>
+    '<tr>'
+    +'<td><strong>'+c.programme_id+'</strong></td>'
+    +'<td><span class="tag '+tagClass(c.foerderstufe)+'">'+c.foerderstufe+'</span></td>'
+    +'<td><span class="tag tag-type" style="font-size:9px">'+(c.darlehensart.includes('Annuit')?'Annuität':'Endfällig')+'</span></td>'
+    +'<td style="color:var(--muted);font-size:12px">'+c.laufzeit_label+'</td>'
+    +'<td style="font-family:var(--mono);color:var(--muted)">'+c.prevVal.toFixed(2)+' %</td>'
+    +'<td style="font-family:var(--mono);color:var(--accent)">'+parseFloat(c.effektivzins_pct).toFixed(2)+' %</td>'
+    +'<td style="font-family:var(--mono);color:'+(c.diff>0?'var(--accent3)':'var(--accent2)')+'">'+( c.diff>0?'▲ +':'▼ ')+c.diff.toFixed(2)+' %</td>'
+    +'<td style="font-family:var(--mono);color:'+(c.diff>0?'var(--accent3)':'var(--accent2)')+'">'+( c.diff>0?'+':'')+c.relPct.toFixed(1)+' %</td>'
+    +'</tr>'
+  ).join('');
+
+  document.getElementById('deltaWrap').innerHTML=
+    '<div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:12px">'
+    +compareDate+' → '+latest+' · '+changes.length+' Änderung(en)</div>'
+    +'<table class="rate-table"><thead><tr>'
+    +'<th>Programm</th><th>Förderstufe</th><th>Darlehen</th><th>Laufzeit</th>'
+    +'<th>Vorher</th><th>Jetzt</th><th>Absolut</th><th>Relativ</th>'
+    +'</tr></thead><tbody>'+rows_html+'</tbody></table>';
 }
 
 init();
