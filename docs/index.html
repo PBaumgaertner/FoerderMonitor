@@ -75,6 +75,49 @@ main{padding:32px 40px;max-width:1400px}
 .toggle-btn:hover{border-color:var(--accent);color:var(--accent)}
 .toggle-btn.active{background:rgba(88,166,255,.15);border-color:var(--accent);color:var(--accent)}
 .chart-line-count{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px;min-height:14px}
+/* Förderstufen-Tooltip */
+.stufe-tag-wrap{position:relative;display:inline-block}
+.stufe-tooltip{
+  display:none;
+  position:fixed;
+  z-index:9999;
+  width:300px;
+  background:#1c2128;
+  border:1px solid #30363d;
+  border-radius:8px;
+  padding:14px 16px;
+  font-family:var(--sans);
+  font-size:12px;
+  color:var(--text);
+  line-height:1.55;
+  box-shadow:0 8px 24px rgba(0,0,0,.5);
+  pointer-events:none;
+}
+.stufe-tooltip.visible{display:block}
+.stufe-tooltip-title{
+  font-family:var(--mono);
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.8px;
+  color:var(--muted);
+  margin-bottom:8px;
+  padding-bottom:7px;
+  border-bottom:1px solid #30363d;
+}
+.stufe-tooltip-name{
+  font-family:var(--serif);
+  font-size:13px;
+  font-weight:600;
+  margin-bottom:10px;
+  line-height:1.3;
+}
+.stufe-tooltip ul{
+  margin:0;
+  padding-left:14px;
+  color:var(--muted);
+}
+.stufe-tooltip ul li{margin-bottom:4px}
+.stufe-tooltip ul li strong{color:var(--text)}
 </style>
 </head>
 <body>
@@ -218,12 +261,51 @@ const LAUFZEIT_ORDER = ['4 bis 10 Jahre','11 bis 25 Jahre','26 bis 35 Jahre'];
 // Endfällig hat nur eine Laufzeitstufe in den KfW-Daten
 const ENDFAELLIG_LAUFZEIT = '4 bis 10 Jahre';
 
-// Vollständige KfW-Bezeichnungen für Tooltips/Infotexte
+// Vollständige KfW-Bezeichnungen und Anforderungen für Tooltips
 const STUFE_LABEL = {
   'KNN':      'Klimafreundlicher Neubau im Niedrigpreissegment',
   'EH55':     'Effizienzhaus 55 – Wohngebäude',
-  'EH40':     'Klimafreundliches Wohngebäude (EH40)',
-  'EH40+QNG': 'Klimafreundliches Wohngebäude – mit Qualitätssiegel Nachhaltiges Gebäude (QNG)',
+  'EH40':     'Klimafreundliches Wohngebäude (Effizienzhaus 40)',
+  'EH40+QNG': 'Klimafreundliches Wohngebäude (EH40) – mit Qualitätssiegel Nachhaltiges Gebäude (QNG)',
+};
+const STUFE_ANFORDERUNGEN = {
+  'EH55': {
+    label: 'Effizienzhaus 55',
+    items: [
+      'Erfüllt <strong>Effizienzhaus-55</strong>-Standard',
+      'Keine Beheizung mit <strong>Öl oder Gas</strong>',
+      'Gültige <strong>Baugenehmigung</strong> zum Zeitpunkt der Antragstellung',
+      'Befristete Förderstufe – begrenzte Mittel',
+    ]
+  },
+  'EH40': {
+    label: 'Klimafreundliches Wohngebäude',
+    items: [
+      'Erfüllt <strong>Effizienzhaus-40</strong>-Standard',
+      'CO₂-Emissionen im Lebenszyklus erfüllen <strong>QNG-Plus</strong>-Anforderungen',
+      'Keine Beheizung mit <strong>Öl, Gas oder Biomasse</strong>',
+      'Bestätigung durch <strong>Energieeffizienz-Expertin/-Experten</strong>',
+    ]
+  },
+  'EH40+QNG': {
+    label: 'Klimafreundliches Wohngebäude mit QNG',
+    items: [
+      'Erfüllt <strong>Effizienzhaus-40</strong>-Standard',
+      'Zertifizierung nach <strong>QNG-PLUS</strong> oder <strong>QNG-PREMIUM</strong> durch Nachhaltigkeitszertifikat',
+      'Keine Beheizung mit <strong>Öl, Gas oder Biomasse</strong>',
+      'Bestätigung durch <strong>Energieeffizienz- und Nachhaltigkeits-Experten</strong>',
+      'Bis zu <strong>150.000 € Kredit</strong> je Wohneinheit (vs. 100.000 € bei EH40)',
+    ]
+  },
+  'KNN': {
+    label: 'Klimafreundlicher Neubau Niedrigpreissegment',
+    items: [
+      'Erfüllt <strong>Effizienzhaus-40</strong>-Standard',
+      'Flächenoptimierte Bauweise (max. Wohnfläche pro WE)',
+      'Unterschreitung von <strong>Kostengrenzen</strong> im Lebenszyklus',
+      'Keine Kombination mit KfW 297/298 für dieselbe Wohneinheit',
+    ]
+  },
 };
 function tagClass(s){
   if(s==='EH55')return'tag-eh55';
@@ -231,10 +313,43 @@ function tagClass(s){
   if(s==='KNN')return'tag-knn';
   return'tag-kfw40';
 }
-// Rendert Tag-Span mit Langbezeichnung als title-Tooltip
+// Rendert Tag mit Rich-Tooltip (Hover-Overlay via data-stufe)
 function tagHtml(stufe){
-  const label=STUFE_LABEL[stufe]||stufe;
-  return'<span class="tag '+tagClass(stufe)+'" title="'+label+'">'+stufe+'</span>';
+  return'<span class="tag '+tagClass(stufe)+'" data-stufe="'+stufe+'">'+stufe+'</span>';
+}
+// Tooltip-Logik via Event-Delegation
+let _ttTimeout=null;
+document.addEventListener('mouseover', function(e){
+  const tag = e.target.closest('[data-stufe]');
+  if(tag) showStufeTooltip(e, tag.dataset.stufe);
+});
+document.addEventListener('mouseout', function(e){
+  const tag = e.target.closest('[data-stufe]');
+  if(tag) hideStufeTooltip();
+});
+function showStufeTooltip(e, stufe){
+  clearTimeout(_ttTimeout);
+  const tt=document.getElementById('stufeTooltip');
+  if(!tt)return;
+  const d=STUFE_ANFORDERUNGEN[stufe];
+  if(!d){tt.classList.remove('visible');return;}
+  const items=d.items.map(i=>'<li>'+i+'</li>').join('');
+  tt.innerHTML=
+    '<div class="stufe-tooltip-title">Förderstufe</div>'
+    +'<div class="stufe-tooltip-name">'+STUFE_LABEL[stufe]+'</div>'
+    +'<ul>'+items+'</ul>';
+  // Positionierung: rechts vom Cursor, Bildschirmrand beachten
+  const x=e.clientX+14, y=e.clientY-10;
+  const W=window.innerWidth, H=window.innerHeight;
+  tt.style.left=(x+300>W ? W-314 : x)+'px';
+  tt.style.top=(y+tt.offsetHeight>H ? y-tt.offsetHeight-20 : y)+'px';
+  tt.classList.add('visible');
+}
+function hideStufeTooltip(){
+  _ttTimeout=setTimeout(()=>{
+    const tt=document.getElementById('stufeTooltip');
+    if(tt)tt.classList.remove('visible');
+  },80);
 }
 
 // Sicheres Min über Array ohne Stack-Overflow-Risiko bei großen Arrays
@@ -600,7 +715,10 @@ function initTable(){
 // Sortierfunktion für Tabellen-Rows
 function sortRows(rows){
   if(!TB.sortCol)return[...rows].sort((a,b)=>{
-    // Default: Effektivzins aufsteigend
+    // Default: Programm → Förderstufe → Effektivzins
+    if(a.programme_id!==b.programme_id)return a.programme_id.localeCompare(b.programme_id);
+    const si=STUFE_ORDER.indexOf(a.foerderstufe)-STUFE_ORDER.indexOf(b.foerderstufe);
+    if(si!==0)return si;
     return parseFloat(a.effektivzins_pct)-parseFloat(b.effektivzins_pct);
   });
   const dir=TB.sortDir==='asc'?1:-1;
@@ -609,9 +727,16 @@ function sortRows(rows){
       return(parseFloat(a[TB.sortCol])-parseFloat(b[TB.sortCol]))*dir;
     }
     if(TB.sortCol==='laufzeit_label'){
-      return LAUFZEIT_ORDER.indexOf(a.laufzeit_label)>LAUFZEIT_ORDER.indexOf(b.laufzeit_label)?dir:-dir;
+      return(LAUFZEIT_ORDER.indexOf(a.laufzeit_label)-LAUFZEIT_ORDER.indexOf(b.laufzeit_label))*dir;
     }
-    return a[TB.sortCol].localeCompare(b[TB.sortCol])*dir;
+    if(TB.sortCol==='foerderstufe'){
+      return(STUFE_ORDER.indexOf(a.foerderstufe)-STUFE_ORDER.indexOf(b.foerderstufe))*dir;
+    }
+    if(TB.sortCol==='zinsbindung_jahre'){
+      const av=parseInt(a.zinsbindung_jahre)||0, bv=parseInt(b.zinsbindung_jahre)||0;
+      return(av-bv)*dir;
+    }
+    return String(a[TB.sortCol]||'').localeCompare(String(b[TB.sortCol]||''))*dir;
   });
 }
 
@@ -645,7 +770,7 @@ function buildTable(){
     return'<tr>'
       +'<td><strong style="font-size:12px">'+r.programme_id+'</strong>'
       +'<div style="font-size:10px;color:var(--muted);margin-top:2px;max-width:180px;line-height:1.3">'+r.programme_name+'</div></td>'
-      +'<td><span class="tag '+tagClass(r.foerderstufe)+'">'+r.foerderstufe+'</span></td>'
+      +'<td>'+tagHtml(r.foerderstufe)+'</td>'
       +'<td><span class="tag tag-type" style="font-size:9px">'+(r.darlehensart.includes('Annuit')?'Annuität':'Endfällig')+'</span></td>'
       +'<td style="color:var(--muted);font-size:12px">'+r.laufzeit_label+'</td>'
       +'<td style="font-family:var(--mono);color:var(--muted)">'+(r.zinsbindung_jahre||'–')+(r.zinsbindung_jahre?' J.':'')+'</td>'
@@ -656,11 +781,11 @@ function buildTable(){
 
   document.getElementById('rateTableWrap').innerHTML=
     '<table class="rate-table"><thead><tr>'
-    +'<th>Programm</th>'
-    +'<th>Förderstufe</th>'
-    +'<th>Darlehen</th>'
+    +thSort('programme_id','Programm')
+    +thSort('foerderstufe','Förderstufe')
+    +thSort('darlehensart','Darlehen')
     +thSort('laufzeit_label','Laufzeit')
-    +'<th>Zinsbindung</th>'
+    +thSort('zinsbindung_jahre','Zinsbindung')
     +thSort('sollzins_pct','Sollzins')
     +thSort('effektivzins_pct','Effektivzins')
     +'</tr></thead><tbody>'+trs+'</tbody></table>';
@@ -751,5 +876,7 @@ function buildDelta(){
 
 init();
 </script>
+<!-- Förderstufen-Tooltip Overlay -->
+<div id="stufeTooltip" class="stufe-tooltip"></div>
 </body>
 </html>
