@@ -71,6 +71,10 @@ main{padding:32px 40px;max-width:1400px}
 .empty{text-align:center;padding:40px;color:var(--muted);font-size:13px}
 .inline-delta{font-family:var(--mono);font-size:10px;padding:1px 5px;border-radius:3px;margin-left:6px}
 .faded{opacity:.4}
+.toggle-btn{font-family:var(--mono);font-size:11px;padding:4px 11px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.toggle-btn:hover{border-color:var(--accent);color:var(--accent)}
+.toggle-btn.active{background:rgba(88,166,255,.15);border-color:var(--accent);color:var(--accent)}
+.chart-line-count{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px;min-height:14px}
 </style>
 </head>
 <body>
@@ -91,17 +95,22 @@ main{padding:32px 40px;max-width:1400px}
         <div class="card-title" id="chartTitle">Effektivzins über Zeit</div>
         <div class="filters-wrap">
           <div class="filter-group">
-            <div class="filter-label">Förderstufe</div>
+            <div class="filter-label">Programm <span style="color:var(--accent);font-size:9px">MULTI</span></div>
+            <div class="filter-row" id="cfProg"></div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-label">Förderstufe <span style="color:var(--accent);font-size:9px">MULTI</span></div>
             <div class="filter-row" id="cfStufe"></div>
           </div>
           <div class="filter-group">
-            <div class="filter-label">Darlehensart</div>
+            <div class="filter-label">Darlehensart <span style="color:var(--accent);font-size:9px">MULTI</span></div>
             <div class="filter-row" id="cfArt"></div>
           </div>
           <div class="filter-group" id="cfLaufzeitGroup">
-            <div class="filter-label">Laufzeit</div>
+            <div class="filter-label">Laufzeit <span style="color:var(--accent);font-size:9px">MULTI</span></div>
             <div class="filter-row" id="cfLaufzeit"></div>
           </div>
+          <div class="chart-line-count" id="cfLineCount"></div>
         </div>
         <div class="chart-wrap"><canvas id="timeChart"></canvas></div>
       </div>
@@ -195,25 +204,37 @@ main{padding:32px 40px;max-width:1400px}
 
 <script>
 // INJECT_DATA_START
-const SEED_DATA = [{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – private Selbstnutzung (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.0","effektivzins_pct":"1.0"},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – private Selbstnutzung (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.97","effektivzins_pct":"1.99"},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – private Selbstnutzung (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":"10","sollzins_pct":"2.12","effektivzins_pct":"2.14"},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Vermietung (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.0","effektivzins_pct":"1.0"},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Vermietung (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.97","effektivzins_pct":"1.99"},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Vermietung (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":"10","sollzins_pct":"2.12","effektivzins_pct":"2.14"},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – private Selbstnutzung (297)","foerderstufe":"KFW40","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":"2.21","effektivzins_pct":"2.23"},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Vermietung (298)","foerderstufe":"KFW40","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":"2.21","effektivzins_pct":"2.23"},{"date":"2026-03-07","programme_id":"300","programme_name":"Wohneigentum für Familien – Neubau","foerderstufe":"KFW40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.01","effektivzins_pct":"0.01"},{"date":"2026-03-07","programme_id":"300","programme_name":"Wohneigentum für Familien – Neubau","foerderstufe":"KFW40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.95","effektivzins_pct":"0.95"},{"date":"2026-03-07","programme_id":"300","programme_name":"Wohneigentum für Familien – Neubau","foerderstufe":"KFW40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.17","effektivzins_pct":"1.18"},{"date":"2026-03-07","programme_id":"300","programme_name":"Wohneigentum für Familien – Neubau","foerderstufe":"KFW40+QNG","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":"1.3","effektivzins_pct":"1.31"},{"date":"2026-03-07","programme_id":"296","programme_name":"Klimafreundlicher Neubau im Niedrigpreissegment","foerderstufe":"KNN","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.01","effektivzins_pct":"0.01"},{"date":"2026-03-07","programme_id":"296","programme_name":"Klimafreundlicher Neubau im Niedrigpreissegment","foerderstufe":"KNN","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.51","effektivzins_pct":"0.51"},{"date":"2026-03-07","programme_id":"296","programme_name":"Klimafreundlicher Neubau im Niedrigpreissegment","foerderstufe":"KNN","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.76","effektivzins_pct":"0.76"},{"date":"2026-03-07","programme_id":"296","programme_name":"Klimafreundlicher Neubau im Niedrigpreissegment","foerderstufe":"KNN","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":"0.9","effektivzins_pct":"0.9"},{"date":"2026-03-08","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.0","effektivzins_pct":"1.0"},{"date":"2026-03-08","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.97","effektivzins_pct":"1.99"},{"date":"2026-03-08","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":"10","sollzins_pct":"2.12","effektivzins_pct":"2.14"},{"date":"2026-03-08","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.0","effektivzins_pct":"1.0"},{"date":"2026-03-08","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.97","effektivzins_pct":"1.99"},{"date":"2026-03-08","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":"10","sollzins_pct":"2.12","effektivzins_pct":"2.14"},{"date":"2026-03-08","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.6","effektivzins_pct":"0.6"},{"date":"2026-03-08","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.7","effektivzins_pct":"1.71"},{"date":"2026-03-08","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.87","effektivzins_pct":"1.89"},{"date":"2026-03-08","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.6","effektivzins_pct":"0.6"},{"date":"2026-03-08","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.7","effektivzins_pct":"1.71"},{"date":"2026-03-08","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.87","effektivzins_pct":"1.89"},{"date":"2026-03-08","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.6","effektivzins_pct":"0.6"},{"date":"2026-03-08","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.7","effektivzins_pct":"1.71"},{"date":"2026-03-08","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.87","effektivzins_pct":"1.89"},{"date":"2026-03-08","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.6","effektivzins_pct":"0.6"},{"date":"2026-03-08","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.7","effektivzins_pct":"1.71"},{"date":"2026-03-08","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.87","effektivzins_pct":"1.89"},{"date":"2026-03-08","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":"2.21","effektivzins_pct":"2.23"},{"date":"2026-03-08","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":"2.21","effektivzins_pct":"2.23"},{"date":"2026-03-08","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":"1.97","effektivzins_pct":"1.99"},{"date":"2026-03-08","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":"1.97","effektivzins_pct":"1.99"},{"date":"2026-03-08","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":"1.97","effektivzins_pct":"1.99"},{"date":"2026-03-08","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":"1.97","effektivzins_pct":"1.99"},{"date":"2026-03-08","programme_id":"300","programme_name":"Wohneigentum für Familien – Neubau (300)","foerderstufe":"KFW40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.01","effektivzins_pct":"0.01"},{"date":"2026-03-08","programme_id":"300","programme_name":"Wohneigentum für Familien – Neubau (300)","foerderstufe":"KFW40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.95","effektivzins_pct":"0.95"},{"date":"2026-03-08","programme_id":"300","programme_name":"Wohneigentum für Familien – Neubau (300)","foerderstufe":"KFW40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.17","effektivzins_pct":"1.18"},{"date":"2026-03-08","programme_id":"300","programme_name":"Wohneigentum für Familien – Neubau (300)","foerderstufe":"KFW40+QNG","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":"1.3","effektivzins_pct":"1.31"},{"date":"2026-03-08","programme_id":"296","programme_name":"Klimafreundlicher Neubau im Niedrigpreissegment (296)","foerderstufe":"KNN","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.01","effektivzins_pct":"0.01"},{"date":"2026-03-08","programme_id":"296","programme_name":"Klimafreundlicher Neubau im Niedrigpreissegment (296)","foerderstufe":"KNN","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.51","effektivzins_pct":"0.51"},{"date":"2026-03-08","programme_id":"296","programme_name":"Klimafreundlicher Neubau im Niedrigpreissegment (296)","foerderstufe":"KNN","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.76","effektivzins_pct":"0.76"},{"date":"2026-03-08","programme_id":"296","programme_name":"Klimafreundlicher Neubau im Niedrigpreissegment (296)","foerderstufe":"KNN","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":"0.9","effektivzins_pct":"0.9"},{"date":"2026-03-09","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.0","effektivzins_pct":"1.0"},{"date":"2026-03-09","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.97","effektivzins_pct":"1.99"},{"date":"2026-03-09","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":"10","sollzins_pct":"2.12","effektivzins_pct":"2.14"},{"date":"2026-03-09","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.0","effektivzins_pct":"1.0"},{"date":"2026-03-09","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.97","effektivzins_pct":"1.99"},{"date":"2026-03-09","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":"10","sollzins_pct":"2.12","effektivzins_pct":"2.14"},{"date":"2026-03-09","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.6","effektivzins_pct":"0.6"},{"date":"2026-03-09","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.7","effektivzins_pct":"1.71"},{"date":"2026-03-09","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.87","effektivzins_pct":"1.89"},{"date":"2026-03-09","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.6","effektivzins_pct":"0.6"},{"date":"2026-03-09","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.7","effektivzins_pct":"1.71"},{"date":"2026-03-09","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.87","effektivzins_pct":"1.89"},{"date":"2026-03-09","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.6","effektivzins_pct":"0.6"},{"date":"2026-03-09","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.7","effektivzins_pct":"1.71"},{"date":"2026-03-09","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.87","effektivzins_pct":"1.89"},{"date":"2026-03-09","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.6","effektivzins_pct":"0.6"},{"date":"2026-03-09","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.7","effektivzins_pct":"1.71"},{"date":"2026-03-09","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.87","effektivzins_pct":"1.89"},{"date":"2026-03-09","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":"2.21","effektivzins_pct":"2.23"},{"date":"2026-03-09","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":"2.21","effektivzins_pct":"2.23"},{"date":"2026-03-09","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":"1.97","effektivzins_pct":"1.99"},{"date":"2026-03-09","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":"1.97","effektivzins_pct":"1.99"},{"date":"2026-03-09","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"KFW40","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":"1.97","effektivzins_pct":"1.99"},{"date":"2026-03-09","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"KFW40","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":"1.97","effektivzins_pct":"1.99"},{"date":"2026-03-09","programme_id":"300","programme_name":"Wohneigentum für Familien – Neubau (300)","foerderstufe":"KFW40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.01","effektivzins_pct":"0.01"},{"date":"2026-03-09","programme_id":"300","programme_name":"Wohneigentum für Familien – Neubau (300)","foerderstufe":"KFW40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.95","effektivzins_pct":"0.95"},{"date":"2026-03-09","programme_id":"300","programme_name":"Wohneigentum für Familien – Neubau (300)","foerderstufe":"KFW40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":"10","sollzins_pct":"1.17","effektivzins_pct":"1.18"},{"date":"2026-03-09","programme_id":"300","programme_name":"Wohneigentum für Familien – Neubau (300)","foerderstufe":"KFW40+QNG","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":"1.3","effektivzins_pct":"1.31"},{"date":"2026-03-09","programme_id":"296","programme_name":"Klimafreundlicher Neubau im Niedrigpreissegment (296)","foerderstufe":"KNN","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.01","effektivzins_pct":"0.01"},{"date":"2026-03-09","programme_id":"296","programme_name":"Klimafreundlicher Neubau im Niedrigpreissegment (296)","foerderstufe":"KNN","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.51","effektivzins_pct":"0.51"},{"date":"2026-03-09","programme_id":"296","programme_name":"Klimafreundlicher Neubau im Niedrigpreissegment (296)","foerderstufe":"KNN","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":"10","sollzins_pct":"0.76","effektivzins_pct":"0.76"},{"date":"2026-03-09","programme_id":"296","programme_name":"Klimafreundlicher Neubau im Niedrigpreissegment (296)","foerderstufe":"KNN","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":"0.9","effektivzins_pct":"0.9"}];
+const SEED_DATA = [{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"EH55","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.0,"effektivzins_pct":1.0},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"EH55","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.97,"effektivzins_pct":1.99},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"EH55","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":10,"sollzins_pct":2.12,"effektivzins_pct":2.14},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"EH55","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":2.21,"effektivzins_pct":2.23},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"EH40","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":0.6,"effektivzins_pct":0.6},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"EH40","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.7,"effektivzins_pct":1.71},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"EH40","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.87,"effektivzins_pct":1.89},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"EH40","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.97,"effektivzins_pct":1.99},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"EH40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":0.6,"effektivzins_pct":0.6},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"EH40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.7,"effektivzins_pct":1.71},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"EH40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.87,"effektivzins_pct":1.89},{"date":"2026-03-07","programme_id":"297","programme_name":"Klimafreundlicher Neubau – Wohngebäude (297)","foerderstufe":"EH40+QNG","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.97,"effektivzins_pct":1.99},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"EH55","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.0,"effektivzins_pct":1.0},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"EH55","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.97,"effektivzins_pct":1.99},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"EH55","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":10,"sollzins_pct":2.12,"effektivzins_pct":2.14},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"EH55","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":2.21,"effektivzins_pct":2.23},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"EH40","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":0.6,"effektivzins_pct":0.6},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"EH40","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.7,"effektivzins_pct":1.71},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"EH40","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.87,"effektivzins_pct":1.89},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"EH40","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.97,"effektivzins_pct":1.99},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"EH40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":0.6,"effektivzins_pct":0.6},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"EH40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.7,"effektivzins_pct":1.71},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"EH40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.87,"effektivzins_pct":1.89},{"date":"2026-03-07","programme_id":"298","programme_name":"Klimafreundlicher Neubau – Wohngebäude (298)","foerderstufe":"EH40+QNG","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.97,"effektivzins_pct":1.99},{"date":"2026-03-07","programme_id":"296","programme_name":"Klimafreundlicher Neubau im Niedrigpreissegment (296)","foerderstufe":"KNN","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":0.01,"effektivzins_pct":0.01},{"date":"2026-03-07","programme_id":"296","programme_name":"Klimafreundlicher Neubau im Niedrigpreissegment (296)","foerderstufe":"KNN","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":10,"sollzins_pct":0.51,"effektivzins_pct":0.51},{"date":"2026-03-07","programme_id":"296","programme_name":"Klimafreundlicher Neubau im Niedrigpreissegment (296)","foerderstufe":"KNN","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":10,"sollzins_pct":0.76,"effektivzins_pct":0.76},{"date":"2026-03-07","programme_id":"296","programme_name":"Klimafreundlicher Neubau im Niedrigpreissegment (296)","foerderstufe":"KNN","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":0.9,"effektivzins_pct":0.9},{"date":"2026-03-07","programme_id":"300","programme_name":"Wohneigentum für Familien – Neubau (300)","foerderstufe":"EH40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":10,"sollzins_pct":0.01,"effektivzins_pct":0.01},{"date":"2026-03-07","programme_id":"300","programme_name":"Wohneigentum für Familien – Neubau (300)","foerderstufe":"EH40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"11 bis 25 Jahre","zinsbindung_jahre":10,"sollzins_pct":0.95,"effektivzins_pct":0.95},{"date":"2026-03-07","programme_id":"300","programme_name":"Wohneigentum für Familien – Neubau (300)","foerderstufe":"EH40+QNG","darlehensart":"Annuitätendarlehen","laufzeit_label":"26 bis 35 Jahre","zinsbindung_jahre":10,"sollzins_pct":1.17,"effektivzins_pct":1.18},{"date":"2026-03-07","programme_id":"300","programme_name":"Wohneigentum für Familien – Neubau (300)","foerderstufe":"EH40+QNG","darlehensart":"Endfälliges Darlehen","laufzeit_label":"4 bis 10 Jahre","zinsbindung_jahre":"","sollzins_pct":1.3,"effektivzins_pct":1.31}];
 // INJECT_DATA_END
 
 async function loadData(){return{data:SEED_DATA};}
 
 // ── Konstanten ─────────────────────────────────────────────────────────────────
 // Förderstufen in aufsteigendem energetischem Anforderungsniveau
-const STUFE_ORDER = ['KNN','EH55','KFW40','KFW40+QNG'];
-const STUFE_COL   = {'KNN':'#fbbf24','EH55':'#d2a8ff','KFW40':'#58a6ff','KFW40+QNG':'#3fb950','Unbekannt':'#8b949e'};
+const STUFE_ORDER = ['KNN','EH55','EH40','EH40+QNG'];
+const STUFE_COL   = {'KNN':'#fbbf24','EH55':'#d2a8ff','EH40':'#58a6ff','EH40+QNG':'#3fb950','Unbekannt':'#8b949e'};
 const PROG_COL    = ['#58a6ff','#3fb950','#f78166','#d2a8ff','#ffa657'];
 const LAUFZEIT_ORDER = ['4 bis 10 Jahre','11 bis 25 Jahre','26 bis 35 Jahre'];
 // Endfällig hat nur eine Laufzeitstufe in den KfW-Daten
 const ENDFAELLIG_LAUFZEIT = '4 bis 10 Jahre';
 
+// Vollständige KfW-Bezeichnungen für Tooltips/Infotexte
+const STUFE_LABEL = {
+  'KNN':      'Klimafreundlicher Neubau im Niedrigpreissegment',
+  'EH55':     'Effizienzhaus 55 – Wohngebäude',
+  'EH40':     'Klimafreundliches Wohngebäude (EH40)',
+  'EH40+QNG': 'Klimafreundliches Wohngebäude – mit Qualitätssiegel Nachhaltiges Gebäude (QNG)',
+};
 function tagClass(s){
   if(s==='EH55')return'tag-eh55';
-  if(s==='KFW40+QNG')return'tag-qng';
+  if(s==='EH40+QNG')return'tag-qng';
   if(s==='KNN')return'tag-knn';
   return'tag-kfw40';
+}
+// Rendert Tag-Span mit Langbezeichnung als title-Tooltip
+function tagHtml(stufe){
+  const label=STUFE_LABEL[stufe]||stufe;
+  return'<span class="tag '+tagClass(stufe)+'" title="'+label+'">'+stufe+'</span>';
 }
 
 // Sicheres Min über Array ohne Stack-Overflow-Risiko bei großen Arrays
@@ -221,7 +242,12 @@ function safeMin(arr){return arr.reduce((a,b)=>a<b?a:b, Infinity);}
 
 // ── Filter-State ──────────────────────────────────────────────────────────────
 // CF: Chart-Filter  CP: Vergleich  TB: Tabelle  DL: Delta
-const CF = {stufe:null, art:'Annuitätendarlehen', laufzeit:'26 bis 35 Jahre'};
+const CF = {
+  stufen:    new Set(),
+  arten:     new Set(['Annuitätendarlehen']),
+  laufzeiten: new Set(['26 bis 35 Jahre']),
+  progs:     new Set()
+};
 const CP = {prog:'Alle', art:'Annuitätendarlehen', laufzeit:'26 bis 35 Jahre', sort:'Zins ↓'};
 const TB = {prog:'Alle', stufe:'Alle', art:'Alle', laufzeit:'Alle', sortCol:null, sortDir:'asc'};
 const DL = {range:'Vortag', prog:'Alle', stufe:'Alle', sort:'Absolut', dir:'Alle'};
@@ -232,6 +258,35 @@ function renderBtns(containerId, items, activeVal){
     const esc = item.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     return `<button class="filter-btn${item===activeVal?' active':''}" onclick="onFilter('${containerId}','${esc}',this)">${item}</button>`;
   }).join('');
+}
+// Multi-select toggle buttons (für Chart-Filter)
+function renderToggleBtns(containerId, items, activeSet){
+  document.getElementById(containerId).innerHTML = items.map(item=>{
+    const esc = item.replace(/\\/g,'\\\\').replace(/'/g,"\'");
+    const active = activeSet.has(item) ? ' active' : '';
+    return `<button class="toggle-btn${active}" onclick="onToggle('${containerId}','${esc}',this)">${item}</button>`;
+  }).join('');
+}
+function onToggle(containerId, value, btn){
+  const maps = {
+    'cfProg':    CF.progs,
+    'cfStufe':   CF.stufen,
+    'cfArt':     CF.arten,
+    'cfLaufzeit':CF.laufzeiten,
+  };
+  const set = maps[containerId];
+  if(!set) return;
+  if(set.has(value)){
+    if(set.size<=1) return; // mind. 1 aktiv
+    set.delete(value);
+    btn.classList.remove('active');
+  } else {
+    set.add(value);
+    btn.classList.add('active');
+  }
+  const onlyEndf = CF.arten.size===1 && [...CF.arten][0].includes('Endfäl');
+  setLaufzeitEnabled('cfLaufzeitGroup','cfLaufzeit',!onlyEndf);
+  buildChart();
 }
 function setActive(containerId, btn){
   document.querySelectorAll('#'+containerId+' .filter-btn').forEach(b=>b.classList.remove('active'));
@@ -245,10 +300,8 @@ function setLaufzeitEnabled(groupId, rowId, enabled){
 // ── Zentraler Filter-Dispatcher ───────────────────────────────────────────────
 function onFilter(containerId, value, btn){
   setActive(containerId, btn);
-  if     (containerId==='cfStufe')  { CF.stufe=value; buildChart(); }
-  else if(containerId==='cfArt')    { CF.art=value; setLaufzeitEnabled('cfLaufzeitGroup','cfLaufzeit',!value.includes('Endfäl')); buildChart(); }
-  else if(containerId==='cfLaufzeit'){ CF.laufzeit=value; buildChart(); }
-  else if(containerId==='cpProg')   { CP.prog=value; buildComp(); }
+  // cfStufe/cfArt/cfLaufzeit/cfProg → onToggle (multi-select)
+  if(containerId==='cpProg')   { CP.prog=value; buildComp(); }
   else if(containerId==='cpArt')    { CP.art=value; setLaufzeitEnabled('cpLaufzeitGroup','cpLaufzeit',!value.includes('Endfäl')); buildComp(); }
   else if(containerId==='cpLaufzeit'){ CP.laufzeit=value; buildComp(); }
   else if(containerId==='cpSort')   { CP.sort=value; buildComp(); }
@@ -307,8 +360,7 @@ async function init(){
   document.getElementById('lastUpdate').innerHTML=
     '<span class="dot"></span>Stand: <strong>'+latest+'</strong>';
 
-  // CF.stufe auf ersten vorhandenen Wert setzen (nicht hardcoded)
-  CF.stufe = STUFE_ORDER.find(s=>data.some(r=>r.foerderstufe===s)) || STUFE_ORDER[2];
+  // CF.stufen wird in initChart() gesetzt
 
   renderKPIs();
   initChart();
@@ -410,33 +462,57 @@ let _chart=null;
 function initChart(){
   const data=window._allData;
   const stufen=STUFE_ORDER.filter(s=>data.some(r=>r.foerderstufe===s));
+  const pids=[...new Set(data.map(r=>r.programme_id))].sort();
   const laufzeiten=LAUFZEIT_ORDER.filter(l=>data.some(r=>r.laufzeit_label===l));
-  renderBtns('cfStufe', stufen, CF.stufe);
-  renderBtns('cfArt', ['Annuitätendarlehen','Endfälliges Darlehen'], CF.art);
-  renderBtns('cfLaufzeit', laufzeiten, CF.laufzeit);
+  if(CF.stufen.size===0) CF.stufen.add(stufen[0]||STUFE_ORDER[2]);
+  if(CF.progs.size===0)  pids.forEach(p=>CF.progs.add(p));
+  renderToggleBtns('cfProg', pids, CF.progs);
+  renderToggleBtns('cfStufe', stufen, CF.stufen);
+  renderToggleBtns('cfArt', ['Annuitätendarlehen','Endfälliges Darlehen'], CF.arten);
+  renderToggleBtns('cfLaufzeit', laufzeiten, CF.laufzeiten);
   buildChart();
+}
+function labelColor(str){
+  const p=['#58a6ff','#3fb950','#f78166','#d2a8ff','#ffa657','#79c0ff','#56d364','#ff7b72'];
+  let h=0; for(let i=0;i<str.length;i++) h=(h*31+str.charCodeAt(i))>>>0;
+  return p[h%p.length];
 }
 function buildChart(){
   const data=window._allData, dates=window._dates;
-  const isEndf=CF.art.includes('Endfäl');
-  // Bug-Fix 4: Endfällig-Laufzeit aus Daten ableiten statt hardcoded
-  const endfLauf=data.find(r=>r.darlehensart===CF.art)?.laufzeit_label||ENDFAELLIG_LAUFZEIT;
-  const lauf=isEndf?endfLauf:CF.laufzeit;
-  const pids=[...new Set(data.map(r=>r.programme_id))].sort();
-  const datasets=pids.map((pid,i)=>{
+  const combos=[];
+  CF.progs.forEach(pid=>{
+    CF.stufen.forEach(stufe=>{
+      CF.arten.forEach(art=>{
+        const isEndf=art.includes('Endfäl');
+        const laufSet=isEndf
+          ?new Set([data.find(r=>r.darlehensart===art)?.laufzeit_label||ENDFAELLIG_LAUFZEIT])
+          :CF.laufzeiten;
+        laufSet.forEach(lauf=>combos.push({pid,stufe,art,lauf}));
+      });
+    });
+  });
+  const MAX_LINES=8;
+  const shown=combos.slice(0,MAX_LINES);
+  const lineEl=document.getElementById('cfLineCount');
+  if(lineEl) lineEl.textContent=combos.length>MAX_LINES
+    ?combos.length+' Kombinationen – nur erste '+MAX_LINES+' gezeigt'
+    :combos.length>5?combos.length+' Linien aktiv':'';
+  const datasets=shown.map(({pid,stufe,art,lauf})=>{
     const pts=dates.map(d=>{
-      const rs=data.filter(r=>r.date===d&&r.programme_id===pid&&r.foerderstufe===CF.stufe&&r.darlehensart===CF.art&&r.laufzeit_label===lauf);
+      const rs=data.filter(r=>r.date===d&&r.programme_id===pid&&r.foerderstufe===stufe&&r.darlehensart===art&&r.laufzeit_label===lauf);
       const vs=rs.map(r=>parseFloat(r.effektivzins_pct)).filter(v=>!isNaN(v)&&v>0);
       return vs.length?vs[0]:null;
     });
     if(!pts.some(p=>p!==null))return null;
-    return{label:'KfW '+pid, data:pts,
-      borderColor:PROG_COL[i%PROG_COL.length], backgroundColor:PROG_COL[i%PROG_COL.length]+'18',
-      borderWidth:2, pointRadius:3, pointHoverRadius:5, tension:.3, fill:false, spanGaps:true};
+    const lS=lauf.replace(' Jahre','J').replace(' bis ','-');
+    const aS=art.includes('Annuit')?'Ann':'Endf';
+    const label=pid+' · '+stufe+' · '+lS+' · '+aS;
+    const col=labelColor(label);
+    return{label,data:pts,borderColor:col,backgroundColor:col+'18',
+      borderWidth:2,pointRadius:3,pointHoverRadius:5,tension:.3,fill:false,spanGaps:true};
   }).filter(Boolean);
-
-  const artLabel=isEndf?'Endfällig':'Annuität';
-  document.getElementById('chartTitle').textContent='Effektivzins · '+CF.stufe+' · '+lauf+' · '+artLabel;
+  const titleParts=[...CF.stufen].join(', ')+' · '+[...CF.arten].map(a=>a.includes('Annuit')?'Ann':'Endf').join('+');
+  document.getElementById('chartTitle').textContent='Effektivzins · '+titleParts;
   const ctx=document.getElementById('timeChart').getContext('2d');
   if(_chart)_chart.destroy();
   _chart=new Chart(ctx,{type:'line',data:{labels:dates,datasets},options:{
@@ -497,7 +573,7 @@ function buildComp(){
     return '<div class="bar-row">'
       +'<div class="bar-label">'
       +'<div class="bar-label-left">'
-      +'<span class="tag '+tagClass(r.foerderstufe)+'">'+r.foerderstufe+'</span>'
+      +tagHtml(r.foerderstufe)
       +'<strong style="font-size:12px"> KfW '+r.programme_id+'</strong>'
       +'<span style="color:var(--muted);font-size:11px"> · '+r.programme_name+'</span>'
       +'</div>'
