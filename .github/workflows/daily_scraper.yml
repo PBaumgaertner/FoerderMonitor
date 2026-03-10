@@ -59,10 +59,10 @@ jobs:
 
           # Bis zu 3 Versuche mit Backoff falls ein anderer Push zeitgleich landet
           for attempt in 1 2 3; do
-            git pull --rebase=merges origin main \
-              -X ours \
-              -- data/kfw_rates.csv data/kfw_programme.json docs/index.html \
-              && git push origin main && echo "Push erfolgreich (Versuch $attempt)" && exit 0
+            git pull --rebase -X ours origin main \
+              && git push origin main \
+              && echo "Push erfolgreich (Versuch $attempt)" \
+              && exit 0
             echo "Push fehlgeschlagen, warte $((attempt * 5))s..."
             sleep $((attempt * 5))
           done
