@@ -2,8 +2,11 @@ name: Daily KfW Scraper
 
 on:
   schedule:
-    # 07:15 UTC = 08:15 MEZ / 09:15 MESZ – Werktags
-    - cron: '15 7 * * 1-5'
+    # KfW veröffentlicht Zinsen täglich bis ~10:00 Uhr (kfw.de)
+    # Drei Versuche – nur der erste mit neuen Daten committed etwas
+    - cron: '0 7 * * 1-5'   # 08:00 MEZ – erster Versuch
+    - cron: '30 8 * * 1-5'  # 09:30 MEZ – zweiter Versuch
+    - cron: '30 9 * * 1-5'  # 10:30 MEZ – sicherer Fallback
   workflow_dispatch:
 
 # Verhindert parallele Runs – zweiter Run wartet oder wird abgebrochen
