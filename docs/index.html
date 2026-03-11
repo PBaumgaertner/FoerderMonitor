@@ -155,7 +155,7 @@ main{padding:32px 40px;max-width:1400px}
           </div>
           <div class="filter-group">
             <div class="filter-label">Zinsart</div>
-            <div class="filter-row" id="zaChart"><button class="filter-btn active" onclick="onFilter('zaChart','effektivzins_pct',this)">Effektivzins</button><button class="filter-btn" onclick="onFilter('zaChart','sollzins_pct',this)">Sollzins</button></div>
+            <div class="filter-row" id="zaChart"><button class="filter-btn" onclick="onFilter('zaChart','effektivzins_pct',this)">Effektivzins</button><button class="filter-btn active" onclick="onFilter('zaChart','sollzins_pct',this)">Sollzins</button></div>
           </div>
           <div class="chart-line-count" id="cfLineCount"></div>
         </div>
@@ -187,7 +187,7 @@ main{padding:32px 40px;max-width:1400px}
         </div>
         <div class="filter-group" style="margin-top:4px">
           <div class="filter-label">Zinsart</div>
-          <div class="filter-row" id="zaComp"><button class="filter-btn active" onclick="onFilter('zaComp','effektivzins_pct',this)">Effektivzins</button><button class="filter-btn" onclick="onFilter('zaComp','sollzins_pct',this)">Sollzins</button></div>
+          <div class="filter-row" id="zaComp"><button class="filter-btn" onclick="onFilter('zaComp','effektivzins_pct',this)">Effektivzins</button><button class="filter-btn active" onclick="onFilter('zaComp','sollzins_pct',this)">Sollzins</button></div>
         </div>
         <div id="compBarsInner"></div>
       </div>
@@ -246,7 +246,7 @@ main{padding:32px 40px;max-width:1400px}
       </div>
       <div>
         <div class="filter-label" style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:5px">Zinsart</div>
-        <div class="filter-row" id="zaDelta"><button class="filter-btn active" onclick="onFilter('zaDelta','effektivzins_pct',this)">Effektivzins</button><button class="filter-btn" onclick="onFilter('zaDelta','sollzins_pct',this)">Sollzins</button></div>
+        <div class="filter-row" id="zaDelta"><button class="filter-btn" onclick="onFilter('zaDelta','effektivzins_pct',this)">Effektivzins</button><button class="filter-btn active" onclick="onFilter('zaDelta','sollzins_pct',this)">Sollzins</button></div>
       </div>
       <div>
         <div class="filter-label" style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:5px">Richtung</div>
@@ -370,7 +370,7 @@ function safeMin(arr){return arr.reduce((a,b)=>a<b?a:b, Infinity);}
 // ── Filter-State ──────────────────────────────────────────────────────────────
 // CF: Chart-Filter  CP: Vergleich  TB: Tabelle  DL: Delta
 // Zinsart-State: 'effektivzins_pct' | 'sollzins_pct'
-const ZA = { chart: 'effektivzins_pct', comp: 'effektivzins_pct', delta: 'effektivzins_pct' };
+const ZA = { chart: 'sollzins_pct', comp: 'sollzins_pct', delta: 'sollzins_pct' };
 function zaField(key){ return ZA[key]; }
 function zaLabel(key){ return ZA[key]==='sollzins_pct'?'Sollzins':'Effektivzins'; }
 
