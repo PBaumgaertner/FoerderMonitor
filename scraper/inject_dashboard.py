@@ -91,6 +91,11 @@ def main():
         f"// INJECT_DATA_END"
     )
 
+    # Marker-Existenz zuerst prüfen
+    if not re.search(r"// INJECT_DATA_START.*?// INJECT_DATA_END", html, flags=re.DOTALL):
+        print("❌ Marker nicht gefunden – HTML nicht aktualisiert")
+        return
+
     html_new = re.sub(
         r"// INJECT_DATA_START.*?// INJECT_DATA_END",
         new_block,
@@ -99,7 +104,7 @@ def main():
     )
 
     if html_new == html:
-        print("❌ Marker nicht gefunden – HTML nicht aktualisiert")
+        print("✅ docs/index.html unverändert (Daten identisch – kein Update nötig)")
         return
 
     HTML_PATH.write_text(html_new, encoding="utf-8")
