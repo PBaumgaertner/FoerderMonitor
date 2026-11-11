@@ -23,6 +23,7 @@ env:
 jobs:
   scrape:
     runs-on: ubuntu-22.04
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -41,7 +42,10 @@ jobs:
         run: |
           pip install -r requirements.txt
           playwright install chromium
-          playwright install-deps chromium
+          # apt mit Timeouts und Retries, damit ein Mirror-Problem nicht 10 Minuten blockiert
+          echo 'Acquire::Retries "3"; Acquire::http::Timeout "15"; Acquire::https::Timeout "15";' | sudo tee /etc/apt/apt.conf.d/99custom
+          # System-Libs sind auf ubuntu-22.04 bereits vorhanden. Ein apt-Fehler darf den Run nicht stoppen.
+          playwright install-deps chromium || echo "Warnung: install-deps fehlgeschlagen, fahre fort"
 
       - name: Run Scraper
         run: python scraper/kfw_scraper.py
